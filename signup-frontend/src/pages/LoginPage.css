@@ -1,0 +1,323 @@
+/* Main wrapper */
+.login-container {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Poppins', sans-serif; /* You can keep 'Segoe UI' if you want */
+  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+  box-sizing: border-box;
+  position: relative;      /* ✅ Add this */
+  overflow: hidden;        /* ✅ Prevent background from causing scroll */
+  z-index: 0;
+  color: #fff;
+}
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: -8rem;
+  left: -8rem;
+  width: 35rem;
+  height: 35rem;
+  background: radial-gradient(circle at center, #f5c518, transparent);
+  border-radius: 50%;
+  opacity: 0.15;
+  z-index: 0;
+  filter: blur(5rem);
+  pointer-events: none;
+}
+
+
+
+/* Title and Subtitle */
+.filmroll-title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(245, 197, 24, 0.4);
+  color: #f5c518;
+  margin-bottom: 0.25rem;
+  letter-spacing: 1px;
+}
+
+.login-heading {
+  font-size: 1.4rem;
+  color: #ddd;
+  margin-bottom: 1.5rem;
+}
+
+/* Card box */
+.login-box {
+  border-radius: 12px;
+  color:' #fff';
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  width: 90%;
+  position: relative;
+  z-index: 1; /* ✅ Keep it above background blob */
+  max-width: 320px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Labels */
+.login-box label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ddd;
+  margin-bottom: 0.25rem;
+  margin-top: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+/* Inputs */
+.login-box input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  background-color: #1e1e1e;
+  font-size: 1rem;
+  color:#fff;
+  transition: 0.2s;
+}
+.login-box button:disabled {
+  pointer-events: none;
+}
+
+
+.login-box input:focus {
+  outline: none;
+  border-color: #f5c518;
+  background-color: #2a2a2a;
+  box-shadow: 0 0 5px rgba(245, 197, 24, 0.3);
+}
+
+/* Buttons */
+.login-box button {
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #000;
+  background-color: #f5c518;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(91, 109, 255, 0.3);
+  transition: background 0.2s ease;
+}
+.disabled-btn {
+  background-color: #777 !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+
+.login-box button:hover {
+  background-color: #e0b400;
+}
+
+.country-code {
+  width: 2rem;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f1f1f1;
+  font-size: 1rem;
+  text-align: center;
+    color: #333;
+}
+.resend-timer {
+  color: #f5c518;
+  font-weight: 500;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+}
+
+.success-message {
+  color: #4caf50;
+  font-weight: 600;
+  margin-top: 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* OTP Section */
+.otp-boxes {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.5rem;
+  margin: 0.8rem 0;
+}
+
+/* Base style (small screens by default) */
+.otp-input {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1.2rem;
+  text-align: center;
+  border: 1px solid #666;
+  border-radius: 6px;
+  background: #f9f9f9;
+  transition: all 0.3s ease;
+  background-color: #1e1e1e;
+    color: #fff;
+}
+
+/* For larger screens (tablets/desktops) */
+@media screen and (min-width: 480px) {
+  .otp-input {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1.4rem;
+  }
+}
+
+
+.otp-input:focus {
+  border-color: #f5c518;
+  background: #2a2a2a;
+  box-shadow: 0 0 6px rgba(245, 197, 24, 0.3);
+  outline: none;
+  transform: scale(1.1);
+}
+
+/* OTP Action Buttons */
+.otp-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.resend-btn {
+  background-color: transparent;
+  border: 1px solid #5b6dff;
+  color: #5b6dff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  transition: 0.3s ease;
+}
+
+.resend-btn:hover {
+  background-color: #5b6dff;
+  color: white;
+}
+
+/* Footer signup link */
+.signup-text {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.link-text {
+  color: #f5c518;
+  cursor: pointer;
+}
+/* 🔥 Artistic input style for Phone Number */
+.input-block {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+.input-block label {
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+  padding-left: 2px;
+}
+
+.phone-line-input {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid #ccc;
+  transition: border-color 0.3s ease;
+}
+
+.phone-line-input:focus-within {
+  border-color: #5b6dff;
+}
+
+.phone-line-input input {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0.6rem 0.2rem;
+  font-size: 1rem;
+  width: 100%;
+  color: #222;
+}
+.floating-phone-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 1.2rem;
+  gap: 0.5rem;
+}
+
+.fixed-code {
+  font-size: 1rem;
+  padding: 0rem 0.4rem;
+  border-bottom: 2px solid #555;
+  background: transparent;
+  color: #f5c518;
+}
+
+.floating-wrapper {
+  position: relative;
+  flex: 1;
+  padding-bottom: 1rem;
+}
+.error-text {
+  position: absolute;
+  bottom: -1.43rem;
+  left: 0.4;
+  font-size: 0.9rem;
+  color: red;
+}
+
+.floating-wrapper input {
+  width: 100%;
+  padding: 0.8rem 0.4rem 0.4rem;
+  border: none;
+  border-bottom: 2px solid #555;
+  font-size: 1rem;
+  background: transparent;
+  color: #fff;
+  outline: none;
+}
+
+.floating-wrapper input:focus {
+  border-color: #f5c518;
+}
+
+.floating-wrapper label {
+  position: absolute;
+  left: 0.4rem;
+  top: .2rem;
+  font-size: 1rem;
+  color: #ccc;
+  pointer-events: none;
+  transition: 0.2s ease;
+}
+
+.floating-wrapper input:focus + label,
+.floating-wrapper label.float {
+  top: -2rem;
+  left: 0.4rem;
+  font-size: 1rem;
+  color: #f5c518;
+}

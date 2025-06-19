@@ -2,6 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const { sendOTPViaWhatsApp } = require('./utils/sendSMS');
 const app = express();
+const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json'); // adjust path if needed
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 app.use(cors());
 app.use(express.json());
@@ -46,6 +52,31 @@ app.post('/verify', (req, res) => {
     return res.json({ message: 'OTP verified successfully.' });
   }
   return res.status(400).json({ message: 'Invalid OTP.' });
+});
+// Check if phone exists in DB (simulate using Firebase or any data source)
+app.get('/check-phone', async (req, res) => {
+  const { phone } = req.query;
+
+  if (!phone || phone.length < 10) {
+    return res.status(400).json({ message: 'Phone number is invalid' });
+  }
+
+  try {
+    const formatted = `91${phone.replace('+91', '')}`;
+    const phoneDoc = await admin.firestore().collection('usernames')
+     .where('phone', '==',formatted) // ✅ Fix
+      .limit(1)
+      .get();
+
+    if (phoneDoc.empty) {
+      return res.status(404).json({ message: 'Phone number not registered' });
+    } else {
+      return res.status(200).json({ message: 'Phone number exists' });
+    }
+  } catch (err) {
+    console.error('Phone check failed:', err);
+    return res.status(500).json({ message: 'Error checking phone' });
+  }
 });
 
 // Resend OTP
