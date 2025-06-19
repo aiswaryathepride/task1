@@ -25,7 +25,17 @@ app.post('/register', async (req, res) => {
   if (!phone.startsWith('+')) {
     phone = '+91' + phone;
   }
+  const existing = await admin.firestore().collection('sessions')
+    .where('phone', '==', phone)
+    .limit(1)
+    .get();
 
+  if (!existing.empty) {
+    return res.status(400).json({
+      message: 'You are already logged in.',
+    needsRecovery: true
+     });
+  }
   const otp = generateOTP();
   otpStore[phone] = otp;
 
@@ -40,19 +50,45 @@ res.json({ message: 'OTP sent successfully.' });
 });
 
 // Verify OTP
-app.post('/verify', (req, res) => {
+app.post('/verify', async (req, res) => {
   let { phone, otp } = req.body;
 
   if (!phone.startsWith('+')) {
     phone = '+91' + phone;
   }
-
+  
   if (otpStore[phone] === otp) {
-    delete otpStore[phone];
-    return res.json({ message: 'OTP verified successfully.' });
-  }
+  delete otpStore[phone];
+// Before generating a new sessionId
+const existing = await admin.firestore().collection('sessions')
+  .where('phone', '==', phone)
+  .limit(1)
+  .get();
+
+if (!existing.empty) {
+  const existingSession = existing.docs[0];
+  return res.json({
+    message: 'Already logged in',
+    phone,
+    sessionId: existingSession.id
+  });
+}
+  const sessionId = Math.random().toString(36).substring(2, 15);
+  await admin.firestore().collection('sessions').doc(sessionId).set({
+    phone,
+    createdAt: new Date(),
+  });
+
+  console.log(`✅ Session created for ${phone} → ID: ${sessionId}`);
+  return res.json({
+    message: 'OTP verified successfully.',
+    phone,
+    sessionId //this line
+  });
+}
   return res.status(400).json({ message: 'Invalid OTP.' });
 });
+
 // Check if phone exists in DB (simulate using Firebase or any data source)
 app.get('/check-phone', async (req, res) => {
   const { phone } = req.query;
@@ -98,6 +134,51 @@ res.json({ message: 'OTP resent successfully.' }); // No OTP in frontend
     res.status(500).json({ message: 'Failed to resend OTP.' });
   }
 });
+// Validate session
+app.post('/session/validate', async (req, res) => {
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ message: 'Missing sessionId' });
+  }
+
+  try {
+    const doc = await admin.firestore().collection('sessions').doc(sessionId).get();
+
+    if (!doc.exists) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    return res.status(200).json({ message: 'Session valid', data: doc.data() });
+  } catch (err) {
+    console.error('Session check failed:', err);
+    return res.status(500).json({ message: 'Session validation failed' });
+  }
+});
+app.post('/logout', async (req, res) => {
+  const { sessionId, phone } = req.body;
+
+  try {
+    if (sessionId) {
+      await admin.firestore().collection('sessions').doc(sessionId).delete();
+    } else if (phone) {
+      const existing = await admin.firestore().collection('sessions')
+        .where('phone', '==', phone)
+        .limit(1)
+        .get();
+
+      if (!existing.empty) {
+        await existing.docs[0].ref.delete();
+      }
+    }
+
+    return res.json({ message: 'Logged out / session cleared' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    return res.status(500).json({ message: 'Error during logout' });
+  }
+});
+
 
 app.listen(3001, () => {
   console.log('Backend running on http://localhost:3001');

@@ -3,8 +3,15 @@ import './LoginPage.css';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-
+import { useEffect } from 'react';
 const OTPLogin = () => {
+  useEffect(() => {
+  const sessionId = sessionStorage.getItem('loggedInUser');
+  if (sessionId) {
+    navigate('/home');
+  }
+}, []);
+
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']);
@@ -18,20 +25,51 @@ const OTPLogin = () => {
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [phoneError, setPhoneError] = useState('');
 const [isPhoneValid, setIsPhoneValid] = useState(false);
+ const sessionId = sessionStorage.getItem('loggedInUser');
+ const handleSendOTP = async () => {
+  const existingSession = sessionStorage.getItem('loggedInUser');
+  const loggedInPhone = sessionStorage.getItem('loggedInPhone'); // store this during login
+
+  const fullPhone = phone.startsWith('+91') ? phone : '+91' + phone;
+
+ if (existingSession && loggedInPhone && loggedInPhone !== fullPhone) {
+  await axios.post('http://localhost:3001/logout', {
+    sessionId: existingSession
+  });
+  sessionStorage.removeItem('loggedInUser');
+  sessionStorage.removeItem('loggedInPhone');
+  console.log('Switched user – cleared session on backend too');
+}
+  else if (existingSession) {
+  const confirmKeep = window.confirm(
+    'You are already logged in on this device. Do you want to continue with that session?'
+  );
+
+  if (confirmKeep) {
+    navigate('/home');
+  } else {
+    await axios.post('http://localhost:3001/logout', {
+      sessionId: existingSession
+    });
+    sessionStorage.clear();
+    alert('Session cleared. You can now login again.');
+  }
+
+  return;
+}
 
 
-  const handleSendOTP = async () => {
-  // block resend if limit reached
+  // 🚫 Rate limit check
   if (resendCount >= 3) {
-    setOtpSent(false);        // back to phone screen
-    setBlocked(true);         // show "blocked" UI
-    setBlockTimer(30);        // 30s block
+    setOtpSent(false);
+    setBlocked(true);
+    setBlockTimer(30);
     const blockInterval = setInterval(() => {
       setBlockTimer((prev) => {
         if (prev <= 1) {
           clearInterval(blockInterval);
           setBlocked(false);
-          setResendCount(0); // reset tries
+          setResendCount(0);
           return 0;
         }
         return prev - 1;
@@ -41,31 +79,48 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
   }
 
   try {
-   const res = await axios.post('http://localhost:3001/register', { phone });
+    const res = await axios.post('http://localhost:3001/register', { phone });
+
     alert(res.data.message);
-    setOtpExpired(false);
-    setOtpSuccess(false);
-    setOtpSent(true);
-    setResendCount(prev => prev + 1); // count resend
-    setOtpArray(['', '', '', '', '', '']);
 
-    setTimeout(() => {
-      if (otpRefs.current[0]) otpRefs.current[0].focus();
-    }, 50);
+    if (res.data.message === 'OTP sent successfully.') {
+      setOtpExpired(false);
+      setOtpSuccess(false);
+      setOtpSent(true);
+      setResendCount(prev => prev + 1);
+      setOtpArray(['', '', '', '', '', '']);
 
-    setResendTimer(60);
-    const countdown = setInterval(() => {
-      setResendTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdown);
-          setOtpExpired(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      setTimeout(() => {
+        if (otpRefs.current[0]) otpRefs.current[0].focus();
+      }, 50);
+
+      setResendTimer(60);
+      const countdown = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdown);
+            setOtpExpired(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   } catch (err) {
-    alert(err.response?.data?.message || 'Error sending OTP');
+   const msg = err.response?.data?.message;
+  if (msg === 'You are already logged in.') {
+     alert('You were already logged in. Session will now be cleared.');
+
+  // ⛔️ Clear session on backend and frontend
+  const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+await axios.post('http://localhost:3001/logout', { phone: formattedPhone });
+  sessionStorage.clear();
+
+  alert('Session cleared. You can now request a new OTP.');
+  return;
+  }
+
+  alert(msg || 'Error sending OTP');
   }
 };
 
@@ -111,20 +166,23 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
         phone,
         otp,
       });
-
+// ✅THIS LINE to store session
+      sessionStorage.setItem('loggedInUser', res.data.sessionId);
+sessionStorage.setItem('loggedInPhone', res.data.phone);
       setOtpSuccess(true);
    setTimeout(() => {
-  navigate('/home'); // or navigate('/homepage') etc.
+  navigate('/home'); //navigate('/homepage').
 }, 2000);
     } catch (err) {
       setOtpSuccess(false);
       alert(err.response?.data?.message || 'Invalid OTP');
     }
   };
+if (sessionStorage.getItem('loggedInUser')) return null;
 
   return (
     <div className="login-container">
-      <h1 className="filmroll-title">FilmRoll</h1>
+      <h1 className="filmroll-title">🎬 FILMROLL</h1>
       <h2 className="login-heading">Login</h2>
 
       <div className="login-box">
