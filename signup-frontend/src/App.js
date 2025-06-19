@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './Landing';
 import Register from './Register';
+import OTPLogin from './pages/LoginPage';
+import HomePage from './pages/Home';
 
 function App() {
   return (
@@ -9,7 +11,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/signup" element={<Register />} />
-        {/* Add login route later */}
+       <Route path="/login" element={<OTPLogin/>} />
+       <Route path="/home" element={<HomePage/>} />
       </Routes>
     </Router>
   );

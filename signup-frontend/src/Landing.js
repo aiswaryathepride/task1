@@ -78,7 +78,7 @@ Where cinema meets connection. Build your profile, showcase your talent, and rol
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => alert("Login coming soon 🎟️")}
+          onClick={() => navigate('/login')}
           style={{
             padding: '14px 28px',
             fontSize: '1rem',
