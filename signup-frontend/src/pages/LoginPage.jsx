@@ -6,9 +6,10 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 const OTPLogin = () => {
   useEffect(() => {
-  const sessionId = sessionStorage.getItem('loggedInUser');
-  if (sessionId) {
-    navigate('/home');
+  let deviceId = localStorage.getItem('deviceId');
+  if (!deviceId) {
+    deviceId = Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('deviceId', deviceId);
   }
 }, []);
 
@@ -42,11 +43,11 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
 }
   else if (existingSession) {
   const confirmKeep = window.confirm(
-    'You are already logged in on this device. Do you want to continue with that session?'
+    'You were already logged in.Continue with that?'
   );
 
   if (confirmKeep) {
-    navigate('/home');
+   navigate('/home')
   } else {
     await axios.post('http://localhost:3001/logout', {
       sessionId: existingSession
@@ -79,9 +80,17 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
   }
 
   try {
-    const res = await axios.post('http://localhost:3001/register', { phone });
+    const deviceId = window.localStorage.getItem('deviceId');
+const res = await axios.post(
+  'http://localhost:3001/register',
+  { phone },
+  { headers: { 'x-device-id': deviceId } }
+);
 
-    alert(res.data.message);
+    if (res.data.sessionCleared) {
+  alert('⚠️ Previous session was cleared for security.');
+}
+
 
     if (res.data.message === 'OTP sent successfully.') {
       setOtpExpired(false);
@@ -113,10 +122,18 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
 
   // ⛔️ Clear session on backend and frontend
   const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-await axios.post('http://localhost:3001/logout', { phone: formattedPhone });
+    await axios.post('http://localhost:3001/logout', {
+  sessionId: sessionStorage.getItem('loggedInUser')
+});
+
   sessionStorage.clear();
+setOtpSent(false);           // Reset frontend state
+setOtpArray(['', '', '', '', '', '']);
+setOtpSuccess(false);
+
 
   alert('Session cleared. You can now request a new OTP.');
+  await handleSendOTP();
   return;
   }
 
@@ -160,11 +177,13 @@ await axios.post('http://localhost:3001/logout', { phone: formattedPhone });
 
   const handleVerifyOTP = async () => {
     const otp = otpArray.join('');
-
+  
     try {
+      const deviceId = localStorage.getItem('deviceId');
       const res = await axios.post('http://localhost:3001/verify', {
         phone,
         otp,
+        deviceId
       });
 // ✅THIS LINE to store session
       sessionStorage.setItem('loggedInUser', res.data.sessionId);
@@ -178,7 +197,6 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
       alert(err.response?.data?.message || 'Invalid OTP');
     }
   };
-if (sessionStorage.getItem('loggedInUser')) return null;
 
   return (
     <div className="login-container">

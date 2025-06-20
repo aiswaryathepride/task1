@@ -13,7 +13,12 @@ const HomePage = () => {
       return;
     }
 
-    axios.post('http://localhost:3001/session/validate', { sessionId: loggedInUser })
+      const deviceId = localStorage.getItem('deviceId');
+axios.post('http://localhost:3001/session/validate', {
+  sessionId: loggedInUser,
+  deviceId
+})
+
       .then(res => {
         console.log('Session valid:', res.data);
       })
@@ -27,7 +32,10 @@ const HomePage = () => {
   const sessionId = sessionStorage.getItem('loggedInUser');
 
   if (sessionId) {
-    await axios.post('http://localhost:3001/logout', { sessionId });
+   await axios.post('http://localhost:3001/logout', {
+  sessionId,
+  deviceId: localStorage.getItem('deviceId')
+});
   }
 
   sessionStorage.removeItem('loggedInUser');
