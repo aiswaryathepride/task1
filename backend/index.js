@@ -25,6 +25,21 @@ app.post('/register', async (req, res) => {
   if (!phone.startsWith('+')) {
     phone = '+91' + phone;
   }
+  const deviceId = req.headers['x-device-id'];
+
+const existing = await admin.firestore().collection('sessions')
+  .where('phone', '==', phone)
+  .where('deviceId', '==', deviceId)
+  .limit(1)
+  .get();
+let sessionCleared = false;
+if (!existing.empty) {
+  await existing.docs[0].ref.delete();
+  console.log(`🔥 Existing session for ${phone} + ${deviceId} wiped`);
+  sessionCleared = true;
+}
+
+
 
   const otp = generateOTP();
   otpStore[phone] = otp;
@@ -32,7 +47,7 @@ app.post('/register', async (req, res) => {
   try {
     await sendOTPViaWhatsApp(phone, otp); // simulated
     console.log(`OTP for ${phone} is: ${otp}`); // 👈 Show OTP in terminal
-res.json({ message: 'OTP sent successfully.' });
+res.json({ message: 'OTP sent successfully.',sessionCleared });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Failed to send OTP.' });
@@ -40,19 +55,51 @@ res.json({ message: 'OTP sent successfully.' });
 });
 
 // Verify OTP
-app.post('/verify', (req, res) => {
-  let { phone, otp } = req.body;
+app.post('/verify', async (req, res) => {
+  let { phone, otp, deviceId } = req.body;
+
 
   if (!phone.startsWith('+')) {
     phone = '+91' + phone;
   }
-
+  
   if (otpStore[phone] === otp) {
-    delete otpStore[phone];
-    return res.json({ message: 'OTP verified successfully.' });
-  }
+  delete otpStore[phone];
+// Before generating a new sessionId
+const existing = await admin.firestore().collection('sessions')
+  .where('phone', '==', phone)
+  .where('deviceId', '==', deviceId)
+  .limit(1)
+  .get();
+
+if (!existing.empty) {
+  const existingSession = existing.docs[0];
+  return res.json({
+    message: 'Already logged in on this device',
+    phone,
+    sessionId: existingSession.id
+  });
+}
+
+  const sessionId = Math.random().toString(36).substring(2, 15);// 👈 we'll send this from frontend
+
+await admin.firestore().collection('sessions').doc(sessionId).set({
+  phone,
+  deviceId,
+  createdAt: new Date(),
+});
+
+
+  console.log(`✅ Session created for ${phone} → ID: ${sessionId}`);
+  return res.json({
+    message: 'OTP verified successfully.',
+    phone,
+    sessionId //this line
+  });
+}
   return res.status(400).json({ message: 'Invalid OTP.' });
 });
+
 // Check if phone exists in DB (simulate using Firebase or any data source)
 app.get('/check-phone', async (req, res) => {
   const { phone } = req.query;
@@ -98,6 +145,51 @@ res.json({ message: 'OTP resent successfully.' }); // No OTP in frontend
     res.status(500).json({ message: 'Failed to resend OTP.' });
   }
 });
+// Validate session
+app.post('/session/validate', async (req, res) => {
+  const { sessionId } = req.body;
+
+  if (!sessionId) {
+    return res.status(400).json({ message: 'Missing sessionId' });
+  }
+
+  try {
+    const doc = await admin.firestore().collection('sessions').doc(sessionId).get();
+
+    if (!doc.exists) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    return res.status(200).json({ message: 'Session valid', data: doc.data() });
+  } catch (err) {
+    console.error('Session check failed:', err);
+    return res.status(500).json({ message: 'Session validation failed' });
+  }
+});
+app.post('/logout', async (req, res) => {
+  const { sessionId, phone } = req.body;
+
+  try {
+    if (sessionId) {
+      await admin.firestore().collection('sessions').doc(sessionId).delete();
+    } else if (phone) {
+      const existing = await admin.firestore().collection('sessions')
+        .where('phone', '==', phone)
+        .limit(1)
+        .get();
+
+      if (!existing.empty) {
+        await existing.docs[0].ref.delete();
+      }
+    }
+
+    return res.json({ message: 'Logged out / session cleared' });
+  } catch (err) {
+    console.error('Logout error:', err);
+    return res.status(500).json({ message: 'Error during logout' });
+  }
+});
+
 
 app.listen(3001, () => {
   console.log('Backend running on http://localhost:3001');

@@ -1,9 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-
+import { useEffect } from 'react';
 export default function Landing() {
   const navigate = useNavigate();
+
+useEffect(() => {
+  const sessionId = sessionStorage.getItem('loggedInUser');
+  if (sessionId) {
+    navigate('/home');
+  }
+}, []);
+
 
   return (
     <div style={{
