@@ -6,12 +6,19 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 const OTPLogin = () => {
   useEffect(() => {
+  const sessionId = sessionStorage.getItem('loggedInUser');
+  if (sessionId) {
+    navigate('/home');
+    return; // 👈 early exit to avoid running rest
+  }
+
   let deviceId = localStorage.getItem('deviceId');
   if (!deviceId) {
     deviceId = Math.random().toString(36).substring(2, 10);
     localStorage.setItem('deviceId', deviceId);
   }
 }, []);
+
 
   const [phone, setPhone] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -86,9 +93,13 @@ const res = await axios.post(
   { phone },
   { headers: { 'x-device-id': deviceId } }
 );
-
-    if (res.data.sessionCleared) {
-  alert('⚠️ Previous session was cleared for security.');
+if (res.data.message === 'You are already logged in.') {
+  // ✅ Store session and redirect to home directly
+  sessionStorage.setItem('loggedInUser', res.data.sessionId);
+  sessionStorage.setItem('loggedInPhone', res.data.phone);
+  alert('You were already logged in on this device. Redirecting to Home.');
+  navigate('/home');
+  return;
 }
 
 
@@ -117,25 +128,6 @@ const res = await axios.post(
     }
   } catch (err) {
    const msg = err.response?.data?.message;
-  if (msg === 'You are already logged in.') {
-     alert('You were already logged in. Session will now be cleared.');
-
-  // ⛔️ Clear session on backend and frontend
-  const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-    await axios.post('http://localhost:3001/logout', {
-  sessionId: sessionStorage.getItem('loggedInUser')
-});
-
-  sessionStorage.clear();
-setOtpSent(false);           // Reset frontend state
-setOtpArray(['', '', '', '', '', '']);
-setOtpSuccess(false);
-
-
-  alert('Session cleared. You can now request a new OTP.');
-  await handleSendOTP();
-  return;
-  }
 
   alert(msg || 'Error sending OTP');
   }

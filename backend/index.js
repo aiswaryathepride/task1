@@ -34,10 +34,20 @@ const existing = await admin.firestore().collection('sessions')
   .get();
 let sessionCleared = false;
 if (!existing.empty) {
-  await existing.docs[0].ref.delete();
-  console.log(`🔥 Existing session for ${phone} + ${deviceId} wiped`);
-  sessionCleared = true;
+  const doc = existing.docs[0];
+  const data = doc.data();
+  
+  // Don't delete valid sessions
+  if (data && data.phone === phone && data.deviceId === deviceId) {
+    console.log(`✅ Session already exists for ${phone} + ${deviceId}. Keeping it.`);
+    return res.status(200).json({
+      message: 'You are already logged in.',
+      phone,
+      sessionId: doc.id
+    });
+  }
 }
+
 
 
 
@@ -47,7 +57,11 @@ if (!existing.empty) {
   try {
     await sendOTPViaWhatsApp(phone, otp); // simulated
     console.log(`OTP for ${phone} is: ${otp}`); // 👈 Show OTP in terminal
-res.json({ message: 'OTP sent successfully.',sessionCleared });
+res.json({ 
+  message: 'OTP sent successfully.', 
+  sessionCleared,
+  note: sessionCleared ? 'Previous session on this device was cleared' : null 
+});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Failed to send OTP.' });
@@ -156,9 +170,15 @@ app.post('/session/validate', async (req, res) => {
   try {
     const doc = await admin.firestore().collection('sessions').doc(sessionId).get();
 
-    if (!doc.exists) {
-      return res.status(401).json({ message: 'Invalid or expired session' });
-    }
+if (!doc.exists) {
+  return res.status(401).json({ message: 'Invalid or expired session' });
+}
+
+const session = doc.data();
+if (session.deviceId !== req.body.deviceId) {
+  return res.status(403).json({ message: 'Session not valid for this device' });
+}
+
 
     return res.status(200).json({ message: 'Session valid', data: doc.data() });
   } catch (err) {
@@ -170,18 +190,23 @@ app.post('/logout', async (req, res) => {
   const { sessionId, phone } = req.body;
 
   try {
-    if (sessionId) {
-      await admin.firestore().collection('sessions').doc(sessionId).delete();
-    } else if (phone) {
-      const existing = await admin.firestore().collection('sessions')
-        .where('phone', '==', phone)
-        .limit(1)
-        .get();
+   if (!sessionId || !req.body.deviceId) {
+  return res.status(400).json({ message: 'Missing sessionId or deviceId' });
+}
 
-      if (!existing.empty) {
-        await existing.docs[0].ref.delete();
-      }
-    }
+const doc = await admin.firestore().collection('sessions').doc(sessionId).get();
+
+if (!doc.exists) {
+  return res.status(404).json({ message: 'Session not found' });
+}
+
+const session = doc.data();
+if (session.deviceId !== req.body.deviceId) {
+  return res.status(403).json({ message: 'Device mismatch. Cannot logout this session.' });
+}
+
+await admin.firestore().collection('sessions').doc(sessionId).delete();
+
 
     return res.json({ message: 'Logged out / session cleared' });
   } catch (err) {
