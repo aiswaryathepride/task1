@@ -32,6 +32,8 @@ const OTPLogin = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [showLoginToast, setShowLoginToast] = useState(false);
+
 const [isPhoneValid, setIsPhoneValid] = useState(false);
  const sessionId = sessionStorage.getItem('loggedInUser');
  const handleSendOTP = async () => {
@@ -181,9 +183,12 @@ if (res.data.message === 'You are already logged in.') {
       sessionStorage.setItem('loggedInUser', res.data.sessionId);
 sessionStorage.setItem('loggedInPhone', res.data.phone);
       setOtpSuccess(true);
+      setTimeout(() => {
+        setShowLoginToast(true);
+      },2000);
    setTimeout(() => {
   navigate('/home'); //navigate('/homepage').
-}, 2000);
+}, 4000);
     } catch (err) {
       setOtpSuccess(false);
       alert(err.response?.data?.message || 'Invalid OTP');
@@ -250,25 +255,27 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
     </div>
 
     <div className="otp-actions">
-      {!otpExpired ? (
-        <>
-          <button
-            onClick={handleVerifyOTP}
-            disabled={otpArray.some((digit) => digit === '')}
-            className={otpArray.some((digit) => digit === '') ? 'disabled-btn' : ''}
-          >
-            Verify OTP
-          </button>
-         {!otpSuccess && (
-  <p className="resend-timer">Expires in {resendTimer}s</p>
-)}
-        </>
-      ) : (
-        <button className="resend-btn" onClick={handleSendOTP}>
-          Resend OTP
-        </button>
+  {!otpExpired ? (
+    <>
+      <button
+        onClick={handleVerifyOTP}
+        disabled={otpArray.some((digit) => digit === '')}
+        className={otpArray.some((digit) => digit === '') ? 'disabled-btn' : ''}
+      >
+        Verify OTP
+      </button>
+      {!otpSuccess && (
+        <p className="resend-timer below-timer">Expires in {resendTimer}s</p>
       )}
-    </div>
+    </>
+  ) : (
+    <button className="resend-btn" onClick={handleSendOTP}>
+      Resend OTP
+    </button>
+  )}
+</div>
+
+
 
     {otpSuccess && (
       <p className="success-message">✅ OTP Verified Successfully!</p>
@@ -284,6 +291,12 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
 </button>
 
 )}
+{showLoginToast && (
+  <div className="login-toast">
+    ✅ Logged in successfully!
+  </div>
+)}
+
 
       </div>
 

@@ -95,7 +95,7 @@ if (!existing.empty) {
   });
 }
 
-  const sessionId = Math.random().toString(36).substring(2, 15);// 👈 we'll send this from frontend
+const sessionId = Math.random().toString(36).substring(2, 15);// 👈 we'll send this from frontend
 
 await admin.firestore().collection('sessions').doc(sessionId).set({
   phone,
@@ -114,6 +114,21 @@ await admin.firestore().collection('sessions').doc(sessionId).set({
   return res.status(400).json({ message: 'Invalid OTP.' });
 });
 
+app.post('/verify-register', async (req, res) => {
+  let { phone, otp } = req.body;
+
+  if (!phone.startsWith('+')) {
+    phone = '+91' + phone;
+  }
+
+  if (otpStore[phone] === otp) {
+    delete otpStore[phone];
+    console.log(`✅ Register OTP verified for ${phone}`);
+    return res.status(200).json({ message: 'OTP verified successfully.' });
+  }
+
+  return res.status(400).json({ message: 'Invalid OTP.' });
+});
 // Check if phone exists in DB (simulate using Firebase or any data source)
 app.get('/check-phone', async (req, res) => {
   const { phone } = req.query;
@@ -214,6 +229,96 @@ await admin.firestore().collection('sessions').doc(sessionId).delete();
     return res.status(500).json({ message: 'Error during logout' });
   }
 });
+
+app.post('/signup', async (req, res) => {
+  const { fullName, username, phone } = req.body;
+
+  if (!fullName || !username || !phone) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    // Store in Firestore `usernames` collection
+    await admin.firestore().collection('usernames').add({
+      name: fullName,
+      username: username.toLowerCase(),
+      phone: phone.startsWith('+') ? phone.replace('+', '') : phone,
+      createdAt: new Date()
+    });
+
+    res.status(200).json({ message: 'User registered successfully' });
+  } catch (err) {
+    console.error('Signup failed:', err);
+    res.status(500).json({ message: 'Error saving user data' });
+  }
+});
+app.post('/check-availability', async (req, res) => {
+  const { username, phone } = req.body;
+  const db = admin.firestore();
+
+  const usernameCheck = username
+    ? await db.collection('usernames').where('username', '==', username.toLowerCase()).limit(1).get()
+    : { empty: true };
+
+  const phoneCheck = phone
+    ? await db.collection('usernames').where('phone', '==', phone.replace('+', '')).limit(1).get()
+    : { empty: true };
+
+  return res.status(200).json({
+    usernameExists: !usernameCheck.empty,
+    phoneExists: !phoneCheck.empty
+  });
+});
+// --- SUGGEST USERNAMES ---
+app.get('/suggest-usernames', async (req, res) => {
+  const db = admin.firestore();
+  const { partialUsername } = req.query;
+
+  // Simple validation (reuse your own rules)
+  const validate = (uname) => {
+    if (!uname) return 'Username is required.';
+    if (/\s/.test(uname)) return 'Username cannot contain spaces.';
+    if (uname.length < 3) return 'Username too short.';
+    if (uname.length > 15) return 'Username too long.';
+    if (!/^[a-zA-Z0-9_]+$/.test(uname)) return 'Invalid characters.';
+    return '';
+  };
+
+  const validationError = validate(partialUsername?.trim());
+  if (validationError && partialUsername?.trim()) {
+    return res.status(400).json({ message: validationError });
+  }
+
+  const base = partialUsername?.trim().toLowerCase() || '';
+  const suggestions = [];
+  const maxSuggestions = 3;
+
+  try {
+    const exactDoc = await db.collection('usernames').where('username', '==', base).limit(1).get();
+    if (exactDoc.empty) {
+      suggestions.push(base);
+    }
+
+    let tries = 0;
+    while (suggestions.length < maxSuggestions && tries < 10) {
+      tries++;
+      const suffix = Math.floor(Math.random() * 900) + 100; // 3-digit
+      const suggestion = `${base}${suffix}`;
+      if (suggestion.length > 15) continue;
+      const isValid = !validate(suggestion);
+      const exists = await db.collection('usernames').where('username', '==', suggestion).limit(1).get();
+      if (isValid && exists.empty && !suggestions.includes(suggestion)) {
+        suggestions.push(suggestion);
+      }
+    }
+
+    return res.status(200).json({ suggestions });
+  } catch (err) {
+    console.error('Username suggestion error:', err);
+    return res.status(500).json({ message: 'Error generating suggestions.' });
+  }
+});
+
 
 
 app.listen(3001, () => {
