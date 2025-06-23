@@ -16,14 +16,21 @@ const validateUsername = (inputUsername) => {
 
   return '';
 };
+
 const deviceId = localStorage.getItem('deviceId') || 'browser-default'; // fallback
 
 function Register() {
-  const [formData, setFormData] = useState({
-    username: '',
-    fullname: '',
-    phone: '',
-    termsAccepted: false
+  const navigate = useNavigate();
+
+  // Initialize formData from sessionStorage or use default empty values
+  const [formData, setFormData] = useState(() => {
+    const savedFormData = sessionStorage.getItem('registerFormData');
+    return savedFormData ? JSON.parse(savedFormData) : {
+      username: '',
+      fullname: '',
+      phone: '',
+      termsAccepted: false
+    };
   });
 
   const [errors, setErrors] = useState({});
@@ -32,7 +39,7 @@ function Register() {
   const [message, setMessage] = useState('');
   const [toastMsg, setToastMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [touched, setTouched] = useState(false);
+  const [touched, setTouched] = useState(false); 
   const [suggestions, setSuggestions] = useState([]);
   const [resendTimer, setResendTimer] = useState(60);
   const [availability, setAvailability] = useState({
@@ -40,7 +47,26 @@ function Register() {
     phoneExists: false
   });
 
-  const navigate = useNavigate();
+  // Save formData to sessionStorage when the component unmounts or before navigation
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem('registerFormData', JSON.stringify(formData));
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // This cleanup runs when the component unmounts (e.g., navigating away)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Save data before unmounting, unless OTP has been sent
+      if (!otpSent) {
+        sessionStorage.setItem('registerFormData', JSON.stringify(formData));
+      } else {
+        // If OTP is sent, clear the stored data as the form state has progressed
+        sessionStorage.removeItem('registerFormData');
+      }
+    };
+  }, [formData, otpSent]); // Depend on formData and otpSent to save latest state
 
   // Timer countdown
   useEffect(() => {
@@ -74,40 +100,38 @@ function Register() {
 
   // Username availability check
   useEffect(() => {
-  const checkUsername = async () => {
-    const usernameError = validateUsername(formData.username);
-    if (!formData.username.trim() || usernameError) {
-      setAvailability(prev => ({ ...prev, usernameExists: false }));
-      setSuggestions([]); // 🧹 clear suggestions
-      return;
-    }
-
-    try {
-      const res = await axios.post('http://localhost:3001/check-availability', {
-        username: formData.username, phone: ''
-      });
-      const isTaken = res.data.usernameExists;
-      setAvailability(prev => ({ ...prev, usernameExists: isTaken }));
-
-      // 🧠 If taken, fetch suggestions
-      if (isTaken) {
-        const suggRes = await axios.get(`http://localhost:3001/suggest-usernames`, {
-          params: { partialUsername: formData.username }
+    const checkUsername = async () => {
+      const usernameError = validateUsername(formData.username);
+      if (!formData.username.trim() || usernameError) {
+        setAvailability(prev => ({ ...prev, usernameExists: false }));
+        setSuggestions([]); // 🧹 clear suggestions
+        return;
+      }
+      try {
+        const res = await axios.post('http://localhost:3001/check-availability', {
+          username: formData.username, phone: ''
         });
-        setSuggestions(suggRes.data.suggestions || []);
-      } else {
+        const isTaken = res.data.usernameExists;
+        setAvailability(prev => ({ ...prev, usernameExists: isTaken }));
+
+        // 🧠 If taken, fetch suggestions
+        if (isTaken) {
+          const suggRes = await axios.get(`http://localhost:3001/suggest-usernames`, {
+            params: { partialUsername: formData.username }
+          });
+          setSuggestions(suggRes.data.suggestions || []);
+        } else {
+          setSuggestions([]);
+        }
+      } catch (error) {
+        console.error('Username check error:', error);
         setSuggestions([]);
       }
-    } catch (error) {
-      console.error('Username check error:', error);
-      setSuggestions([]);
-    }
-  };
+    };
 
-  const delay = setTimeout(checkUsername, 500);
-  return () => clearTimeout(delay);
-}, [formData.username]);
-
+    const delay = setTimeout(checkUsername, 500);
+    return () => clearTimeout(delay);
+  }, [formData.username]);
 
   // Phone availability check
   useEffect(() => {
@@ -150,14 +174,17 @@ function Register() {
     setMessage('');
     try {
       const res = await axios.post(
-  'http://localhost:3001/register',
-  { phone: '+91' + formData.phone },
-  { headers: { 'x-device-id': deviceId } }
-);
-     setMessage(res.data.message);
+        'http://localhost:3001/register',
+        { phone: '+91' + formData.phone },
+        { headers: { 'x-device-id': deviceId } }
+      );
+      setMessage(res.data.message);
       setOtpSent(true);
       setResendTimer(60);
-    } catch {
+      // Clear saved data once OTP is successfully sent
+      sessionStorage.removeItem('registerFormData');
+    } catch (error) {
+      console.error("OTP send failed:", error);
       setMessage("Failed to send OTP. Try again.");
     } finally {
       setLoading(false);
@@ -173,16 +200,19 @@ function Register() {
         phone: formattedPhone, otp
       });
       setMessage(res.data.message);
-      if (res.data.message === 'OTP verified successfully.')
-       setToastMsg('✅ Account created! Redirecting to login...');
-        setTimeout(() => {navigate('/login');}, 3500);
-      await axios.post('http://localhost:3001/signup', {
-  fullName: formData.fullname,
-  username: formData.username,
-  phone: formattedPhone
-});
+      if (res.data.message === 'OTP verified successfully.') {
+        setToastMsg('✅ Account created! Redirecting to login...');
+        setTimeout(() => { navigate('/login'); }, 3500);
 
-    } catch {
+        // Assuming signup always happens after OTP verification
+        await axios.post('http://localhost:3001/signup', {
+          fullName: formData.fullname,
+          username: formData.username,
+          phone: formattedPhone
+        });
+      }
+    } catch (error) {
+      console.error("OTP verification failed:", error);
       setMessage("Invalid OTP. Try again.");
     } finally {
       setLoading(false);
@@ -196,7 +226,8 @@ function Register() {
       await axios.post('http://localhost:3001/resend-otp', { phone: formData.phone });
       setMessage("OTP resent!");
       setResendTimer(60);
-    } catch {
+    } catch (error) {
+      console.error("Resend OTP failed:", error);
       setMessage("Failed to resend OTP.");
     } finally {
       setLoading(false);
@@ -204,32 +235,33 @@ function Register() {
   };
 
   const Toast = ({ message, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000); // Auto close after 3s
-    return () => clearTimeout(timer);
-  }, [onClose]);
+    useEffect(() => {
+      const timer = setTimeout(onClose, 3000); // Auto close after 3s
+      return () => clearTimeout(timer);
+    }, [onClose]);
 
-  return (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      left: '50%',
-      background: '#323232',
-      color: '#fff',
-      padding: '12px 20px',
-      borderRadius: '8px',
-      boxShadow: '0 0 10px rgba(0,0,0,0.3)',
-      zIndex: 9999,
-      fontSize: '0.95rem',
-      transform: 'translateX(-50%)'
-    }}>
-      {message}
-    </div>
-  );
-};
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        left: '50%',
+        background: '#323232',
+        color: '#fff',
+        padding: '12px 20px',
+        borderRadius: '8px',
+        boxShadow: '0 0 10px rgba(0,0,0,0.3)',
+        zIndex: 9999,
+        fontSize: '0.95rem',
+        transform: 'translateX(-50%)'
+      }}>
+        {message}
+      </div>
+    );
+  };
 
   return (
     <div style={containerStyle}>
+      {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg('')} />}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -251,38 +283,37 @@ function Register() {
             {!errors.username && formData.username && (
               availability.usernameExists
                 ? <p style={{ color: 'red', marginTop: '-12px' }}>❌ Username already taken</p>
-                
                 : <p style={{ color: 'lightgreen', marginTop: '-12px' }}>✅ Username available</p>
             )}
             {availability.usernameExists && suggestions.length > 0 && (
-  <div style={{ marginTop: '-5px', marginBottom: '15px' }}>
-    <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#ccc' }}>Available suggestions:</p>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-      {suggestions.map((sugg, index) => (
-        <span
-          key={index}
-          onClick={() => setFormData(prev => ({ ...prev, username: sugg }))}
-          style={{
-            cursor: 'pointer',
-            color: '#61dafb',
-            fontSize: '0.9em',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {sugg}
-        </span>
-      ))}
-    </div>
-  </div>
-)}
+              <div style={{ marginTop: '-5px', marginBottom: '15px' }}>
+                <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#ccc' }}>Available suggestions:</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {suggestions.map((sugg, index) => (
+                    <span
+                      key={index}
+                      onClick={() => setFormData(prev => ({ ...prev, username: sugg }))}
+                      style={{
+                        cursor: 'pointer',
+                        color: '#61dafb',
+                        fontSize: '0.9em',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {sugg}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-
-            {errors.phone && (
-  <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
-)}
-
-
-
+            {/* This error message block was redundant and potentially misplaced based on original code.
+                The individual InputField handles its own error display.
+                Removed:
+                {errors.phone && (
+                  <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
+                )}
+            */}
 
             <InputField
               label="Full Name"
@@ -294,69 +325,69 @@ function Register() {
             />
 
             <div style={{ marginBottom: '16px', width: '100%' }}>
-  <label>Phone</label>
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    marginTop: '6px',
-    height: '46px'  // 👈 Match height
-  }}>
-    <div style={{
-      backgroundColor: '#fff',
-      color: '#000',
-      border: '1px solid #ccc',
-      borderRight: 'none',
-      borderTopLeftRadius: '8px',
-      borderBottomLeftRadius: '8px',
-      padding: '0 12px',
-      height: '100%',               // 👈 Match height
-      display: 'flex',
-      alignItems: 'center'
-    }}>
-      +91
-    </div>
-    <input
-  type="tel"
-  name="phone"
-  value={formData.phone}
-  onChange={handleChange}
-  maxLength="10"
-  placeholder="10-digit number"
-  onPaste={(e) => {
-    const pasted = e.clipboardData.getData('text');
-    if (pasted.startsWith('+91')) e.preventDefault();
-  }}
-  style={{
-    ...inputStyle,
-    flex: 1,
-    height: '47px', // 👈 Fix the height here explicitly
-    padding: '10px 12px',
-    marginTop: 0,
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
-    borderLeft: 'none',
-    boxSizing: 'border-box',
-    fontSize: '1rem'
-  }}
-/>
+              <label>Phone</label>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginTop: '6px',
+                height: '46px'
+              }}>
+                <div style={{
+                  backgroundColor: '#fff',
+                  color: '#000',
+                  border: '1px solid #ccc',
+                  borderRight: 'none',
+                  borderTopLeftRadius: '8px',
+                  borderBottomLeftRadius: '8px',
+                  padding: '0 12px',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}>
+                  +91
+                </div>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  maxLength="10"
+                  placeholder="10-digit number"
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    // Prevent pasting if it starts with +91 to avoid redundant prefix
+                    if (pasted.startsWith('+91')) {
+                      e.preventDefault();
+                      // Optionally, set the value to just the digits
+                      setFormData(prev => ({ ...prev, phone: pasted.replace('+91', '').replace(/\D/g, '').substring(0, 10) }));
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    flex: 1,
+                    height: '47px',
+                    padding: '10px 12px',
+                    marginTop: 0,
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                    borderLeft: 'none',
+                    boxSizing: 'border-box',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+              {errors.phone && (
+                <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
+              )}
 
-
-  </div>
-  {errors.phone && (
-  <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
-)}
-
-
-{!errors.phone && /^\d{10}$/.test(formData.phone) && (
-  availability.phoneExists ? (
-    <p style={{ color: 'red', marginTop: '2px' }}>❌ Phone already registered</p>
-  ) : (
-    <p style={{ color: 'lightgreen', marginTop: '2px' }}>✅ Phone available</p>
-  )
-)}
-
-  {/* Availability/Error messages stay the same */}
-</div>
+              {!errors.phone && /^\d{10}$/.test(formData.phone) && (
+                availability.phoneExists ? (
+                  <p style={{ color: 'red', marginTop: '2px' }}>❌ Phone already registered</p>
+                ) : (
+                  <p style={{ color: 'lightgreen', marginTop: '2px' }}>✅ Phone available</p>
+                )
+              )}
+            </div>
 
             {/* Terms & Conditions */}
             <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
@@ -433,14 +464,13 @@ function Register() {
           <p style={{ marginTop: '20px', color: '#f5c518', textAlign: 'center' }}>{message}</p>
         )}
         <p style={{ marginTop: '20px', fontSize: '0.9rem', color: '#ccc', textAlign: 'center' }}>
-  Already have an account ?{' '}
-  <Link to="/login" style={{ color: '#f5c518', fontWeight: 'bold', textDecoration: 'underline' }}>
-    Login here
-  </Link>
-</p>
+          Already have an account ?{' '}
+          <Link to="/login" style={{ color: '#f5c518', fontWeight: 'bold', textDecoration: 'underline' }}>
+            Login here
+          </Link>
+        </p>
 
       </motion.div>
-      {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg('')} />}
     </div>
   );
 }
@@ -460,7 +490,7 @@ const InputField = ({ label, name, value, onChange, error, placeholder }) => (
   </div>
 );
 
-// Styles
+// Styles (unchanged)
 const containerStyle = {
   minHeight: '100vh',
   background: 'linear-gradient(to right, #141e30, #243b55)',
@@ -485,6 +515,7 @@ const formCardStyle = {
 
 const inputStyle = {
   width: '100%',
+  height: '47px',
   padding: '10px 12px',
   marginTop: '6px',
   borderRadius: '8px',
@@ -492,7 +523,8 @@ const inputStyle = {
   fontSize: '1rem',
   backgroundColor: '#fff',
   color: '#000',
-  fontFamily: 'inherit'
+  fontFamily: 'inherit',
+  boxSizing: 'border-box'
 };
 
 const submitButton = {
