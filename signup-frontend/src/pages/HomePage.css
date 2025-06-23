@@ -1,0 +1,217 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #121212, #1f1f1f);
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+}
+
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 100vh;
+  background-color: transparent;
+}
+
+.home-title {
+  font-size: 32px;
+  color: #f5c518;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.home-subtitle {
+  margin-top: 10px;
+  font-size: 18px;
+  color: #aaa;
+}
+
+.home-buttons {
+  margin-top: 30px;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.golden-btn {
+  background: linear-gradient(145deg, #f5c518, #e8b707);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(245, 197, 24, 0.4);
+  transition: all 0.3s ease;
+}
+
+.golden-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.6);
+}
+
+.golden-btn.outline {
+  background: transparent;
+  color: #f5c518;
+  border: 2px solid #f5c518;
+  box-shadow: none;
+}
+
+.logout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 15, 15, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.logout-box {
+  background: rgba(40, 40, 40, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 35px 50px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  color: #fff;
+  max-width: 420px;
+}
+
+.logout-box h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.logout-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.red-btn,
+.blue-btn {
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+  cursor: pointer;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  transition: background 0.3s ease;
+}
+
+.red-btn {
+  background-color: #ff4d4f;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.red-btn:hover {
+  background-color: #ff5f61;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.blue-btn {
+  background-color: #1890ff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.blue-btn:hover {
+  background-color: #40a9ff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+/* 👤 Profile Icon (Top Right) */
+.profile-icon-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.profile-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #f5c518;
+  box-shadow: 0 0 10px rgba(245, 197, 24, 0.5);
+  transition: transform 0.3s ease;
+}
+
+.profile-icon:hover {
+  transform: scale(1.1);
+}
+
+/* ✅ Logout Success Toast */
+.logout-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #2ecc71;
+  color: #000;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-weight: bold;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  z-index: 9999;
+  animation: fadeInOut 2.5s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+/* ⬇️ Dropdown Menu Under Profile Icon */
+.dropdown-menu {
+  position: absolute;
+  top: 70px; /* below the profile icon */
+  right: 0;
+  background-color: #1e1e1e;
+  border: 1px solid #444;
+  border-radius: 10px;
+  width: 180px;
+  z-index: 999;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  padding: 8px 0;
+  animation: dropdownFade 0.2s ease-out;
+}
+
+.dropdown-item {
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background-color: #2b2b2b;
+  color: #f5c518;
+}
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

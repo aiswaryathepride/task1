@@ -1,0 +1,50 @@
+.caption-editor {
+  margin-bottom: 2rem;
+}
+
+.format-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.format-buttons button {
+  background: none;
+  background-color: transparent;
+  border: 1px solid #ffcc00;
+  padding: 4px 8px;
+  color: #ffcc00;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.format-buttons button.active {
+  background-color: #ffcc00;
+  color: #000;
+}
+
+.editor-box {
+  border: 1px solid #444;
+  background-color: #1a1a1a;
+  color: white;
+  min-height: 100px;
+  padding: 12px;
+  border-radius: 10px;
+  overflow-y: auto;
+  font-size: 15px;
+  line-height: 1.5;
+  outline: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  direction: ltr;
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+}
+
+.char-count {
+  text-align: right;
+  color: gray;
+  font-size: 12px;
+  margin-top: 4px;
+}

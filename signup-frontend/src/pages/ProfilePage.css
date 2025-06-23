@@ -1,0 +1,159 @@
+/* ProfilePage.css */
+.profile-container {
+  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+  min-height: 100vh;
+  padding: 24px;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-card {
+  width: 100%;
+  max-width: 600px;
+  background: transparent;
+}
+
+.profile-title {
+  text-align: center;
+  color: #ffcc00;
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffcc00;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  background-color: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 10px;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.textarea {
+  min-height: 100px;
+}
+
+.char-count {
+  text-align: right;
+  font-size: 12px;
+  color: #888;
+}
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.btn-cancel {
+  background: transparent;
+  border: 1px solid red;
+  color: red;
+}
+
+.btn-cancel:hover {
+  background-color: red;
+  color: white;
+}
+
+.btn-save {
+  background-color: #ffcc00;
+  color: #000;
+  border: none;
+}
+
+.btn-save:hover {
+  background-color: #ffe066;
+}
+.btn-edit {
+  background: transparent;
+  border: 1px solid #ffcc00;
+  color: #ffcc00;
+}
+
+.btn-edit:hover {
+  background-color: #ffcc00;
+  color: #000;
+}
+.caption-display {
+  background-color: #1a1a1a;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+
+.btn-submit {
+  width: 100%;
+  background-color: #ffcc00;
+  color: #000;
+}
+
+.btn-submit:hover {
+  background-color: #ffe066;
+}
+
+.social-block {
+  margin-bottom: 24px;
+}
+.caption-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.caption-actions .left-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.caption-actions .btn {
+  padding: 10px 16px;
+  min-width: 100px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn.btn-format {
+  padding: 8px 14px;
+  background-color: transparent;
+  border: 2px solid #ffcc00;
+  color: #ffcc00;
+  font-weight: 500;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn.btn-format:hover {
+  background-color: #ffcc00;
+  color: #000;
+}
