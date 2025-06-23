@@ -372,7 +372,7 @@ function Register() {
                 I accept the <Link to="/terms" style={{ color: '#f5c518', textDecoration: 'underline' }}>terms and conditions</Link>.
               </label>
             </div>
-            {!formData.termsAccepted && (
+            {touched && !formData.termsAccepted && (
               <p style={{ color: '#ff6b6b', fontSize: '0.85rem', marginTop: '-12px' }}>
                 You must accept the terms and conditions to continue.
               </p>
