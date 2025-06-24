@@ -6,7 +6,7 @@ import FilmStripFrame from './components/Filmstrip';
 function TermsPage() {
     const containerStyle = {
         minHeight: '100vh',
-        background: 'linear-gradient(to right, #141e30, #243b55)',
+        backgroundColor:' #151716',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -92,7 +92,7 @@ function TermsPage() {
                 {/* Back to Registration Link - placed at the bottom */}
                 <div style={backLinkStyle}>
                     <Link to="/signup" style={backButtonStyle}>
-  Back to Registration
+  Back
 </Link>
 
                 </div>

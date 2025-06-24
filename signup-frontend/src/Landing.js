@@ -11,11 +11,22 @@ useEffect(() => {
     navigate('/home');
   }
 }, []);
+ useEffect(() => {
+   document.body.style.overflow = 'hidden';
+   document.documentElement.style.overflow = 'hidden'; // for <html>
+ 
+   return () => {
+     document.body.style.overflow = 'auto';
+     document.documentElement.style.overflow = 'auto';
+   };
+ }, []);
 
 
   return (
     <div style={{
+      minHeight: '100vh',
       height: '100vh',
+      overflow: 'hidden',
       background: 'linear-gradient(135deg, #0f0f0f, #1a1a1a)',
       color: '#fff',
       display: 'flex',
@@ -24,8 +35,8 @@ useEffect(() => {
       justifyContent: 'center',
       fontFamily: 'Poppins, sans-serif',
       padding: '20px',
-      overflow: 'hidden',
-      position: 'relative',
+      boxSizing: 'border-box',
+      position: 'relative'
     }}>
       {/* Background Glow */}
       <div style={{
@@ -44,12 +55,13 @@ useEffect(() => {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 70, delay: 0.2 }}
-        style={{
-          fontSize: '4rem',
+       style={{
+          fontSize: 'clamp(2.5rem, 6vw, 4rem)',
           letterSpacing: '4px',
           color: '#ffcc00',
           textShadow: '0 0 15px rgba(255, 204, 0, 0.4)',
-          zIndex: 1
+          zIndex: 1,
+          textAlign: 'center'
         }}
       >
         🎬 FILMROLL
@@ -59,13 +71,14 @@ useEffect(() => {
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
-        style={{
-          fontSize: '1.2rem',
+         style={{
+          fontSize: '1.1rem',
           maxWidth: '600px',
           color: '#ccc',
           marginTop: '20px',
           textAlign: 'center',
-          zIndex: 1
+          zIndex: 1,
+          padding: '0 10px'
         }}
       >
 Where cinema meets connection. Build your profile, showcase your talent, and roll into the film industry      </motion.p>
@@ -83,43 +96,48 @@ Where cinema meets connection. Build your profile, showcase your talent, and rol
           zIndex: 1
         }}
       >
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/login')}
-          style={{
-            padding: '14px 28px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            border: '2px solid #ffcc00',
-            borderRadius: '12px',
-            background: 'transparent',
-            color: '#ffcc00',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(8px)',
-          }}
+          <motion.button
+                 whileHover={{ scale: 1.1 }}
+                 whileTap={{ scale: 0.95 }}
+                 onClick={() => navigate('/login')}
+                 style={{
+                   padding: '12px 24px',
+                   fontSize: '1rem',
+                   fontWeight: 'bold',
+                   border: '2px solid #ffcc00',
+                   borderRadius: '12px',
+                   background: 'transparent',
+                   color: '#ffcc00',
+                   cursor: 'pointer',
+                   transition: 'all 0.3s ease',
+                   backdropFilter: 'blur(8px)',
+                   minWidth: '200px',
+                   textAlign: 'center'
+                 }}
         >
           🎟️ Existing User Login
         </motion.button>
 
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/signup')}
-          style={{
-            padding: '14px 28px',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            border: 'none',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #ffcc00, #ffdf80)',
-            color: '#000',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 20px rgba(255, 204, 0, 0.3)'
-          }}
-        >
+      
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/signup')}
+                style={{
+                  padding: '12px 24px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #ffcc00, #ffdf80)',
+                  color: '#000',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 20px rgba(255, 204, 0, 0.3)',
+                  minWidth: '200px',
+                  textAlign: 'center'
+                }}
+              >
           🎬 New User Sign Up
         </motion.button>
       </motion.div>

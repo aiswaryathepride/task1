@@ -19,7 +19,7 @@ width: 100%;
   display: flex;
   align-items: stretch;
   background-color: rgb(0, 0, 0);
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+  box-shadow: inset 0 0 30px rgb(29, 27, 27);
   padding: 1rem;
 }
 
@@ -27,8 +27,8 @@ width: 100%;
   width: 15px;
   background: repeating-linear-gradient(
     to bottom,
-    rgb(255, 255, 255),
-    rgb(255, 255, 255) 10px,
+    rgb(207, 193, 193),
+    rgb(230, 223, 223) 10px,
     transparent 10px,
     transparent 20px
   );
