@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { color, motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import FilmStripFrame from './components/Filmstrip';
 // --- Username format validation function ---
@@ -19,12 +19,28 @@ const validateUsername = (inputUsername) => {
 const deviceId = localStorage.getItem('deviceId') || 'browser-default'; // fallback
 
 function Register() {
-  const [formData, setFormData] = useState({
-    username: '',
-    fullname: '',
-    phone: '',
-    termsAccepted: false
-  });
+ const navigate = useNavigate();
+ 
+  useEffect(() => {
+   document.body.style.overflow = 'hidden';
+   document.documentElement.style.overflow = 'hidden'; // for <html>
+ 
+   return () => {
+     document.body.style.overflow = 'auto';
+     document.documentElement.style.overflow = 'auto';
+   };
+ }, []);
+
+   // Initialize formData from sessionStorage or use default empty values
+   const [formData, setFormData] = useState(() => {
+     const savedFormData = sessionStorage.getItem('registerFormData');
+     return savedFormData ? JSON.parse(savedFormData) : {
+       username: '',
+       fullname: '',
+       phone: '',
+       termsAccepted: false
+     };
+   });
 
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
@@ -40,8 +56,27 @@ function Register() {
     phoneExists: false
   });
 
-  const navigate = useNavigate();
 
+    // Save formData to sessionStorage when the component unmounts or before navigation
+    useEffect(() => {
+      const handleBeforeUnload = () => {
+        sessionStorage.setItem('registerFormData', JSON.stringify(formData));
+      };
+  
+      window.addEventListener('beforeunload', handleBeforeUnload);
+  
+      // This cleanup runs when the component unmounts (e.g., navigating away)
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        // Save data before unmounting, unless OTP has been sent
+        if (!otpSent) {
+          sessionStorage.setItem('registerFormData', JSON.stringify(formData));
+        } else {
+          // If OTP is sent, clear the stored data as the form state has progressed
+          sessionStorage.removeItem('registerFormData');
+        }
+      };
+    }, [formData, otpSent]); 
   // Timer countdown
   useEffect(() => {
     if (otpSent && resendTimer > 0) {
@@ -303,14 +338,15 @@ function Register() {
     height: '46px'  // 👈 Match height
   }}>
     <div style={{
-      backgroundColor: '#fff',
-      color: '#000',
-      border: '1px solid #ccc',
+      backgroundColor: '#151716',
+        color: '#fff',
+        border:' 1px solid yellow',
       borderRight: 'none',
       borderTopLeftRadius: '8px',
       borderBottomLeftRadius: '8px',
-      padding: '0 12px',
-      height: '100%',               // 👈 Match height
+      padding: '0px 11px',
+      maxHeight:'47px',
+      height: '99%',               // 👈 Match height
       display: 'flex',
       alignItems: 'center'
     }}>
@@ -337,6 +373,7 @@ function Register() {
     borderBottomLeftRadius: 0,
     borderLeft: 'none',
     boxSizing: 'border-box',
+    outline: 'none',
     fontSize: '1rem'
   }}
 />
@@ -348,13 +385,10 @@ function Register() {
 )}
 
 
-{!errors.phone && /^\d{10}$/.test(formData.phone) && (
-  availability.phoneExists ? (
+{!errors.phone && /^\d{10}$/.test(formData.phone) && availability.phoneExists(
     <p style={{ color: 'red', marginTop: '2px' }}>❌ Phone already registered</p>
-  ) : (
-    <p style={{ color: 'lightgreen', marginTop: '2px' }}>✅ Phone available</p>
-  )
-)}
+  ) 
+}
 
   {/* Availability/Error messages stay the same */}
 </div>
@@ -370,7 +404,7 @@ function Register() {
                 style={{ marginRight: '10px' }}
               />
               <label htmlFor="termsAccepted" style={{ color: '#fff', fontSize: '0.95rem' }}>
-                I accept the <Link to="/terms" style={{ color: '#f5c518', textDecoration: 'underline' }}>terms and conditions</Link>.
+                I accept the <Link to="/terms" style={{ color: '#f5c518', textDecoration: 'none' }}>terms and conditions</Link>.
               </label>
             </div>
             {touched && !formData.termsAccepted && (
@@ -423,7 +457,7 @@ function Register() {
                 Resend OTP
               </button>
             ) : (
-              <p style={{ marginTop: '10px', color: '#aaa' }}>
+              <p style={{ marginTop: '10px', textAlign:'center',color: '#aaa',textDecoration: 'none'}}>
                 Resend available in {resendTimer}s
               </p>
             )}
@@ -435,8 +469,8 @@ function Register() {
         )}
         <p style={{ marginTop: '20px', fontSize: '0.9rem', color: '#ccc', textAlign: 'center' }}>
   Already have an account ?{' '}
-  <Link to="/login" style={{ color: '#f5c518', fontWeight: 'bold', textDecoration: 'underline' }}>
-    Login here
+  <Link to="/login" style={{ color: '#f5c518', fontWeight: 'bold', textDecoration: 'none' }}>
+    Login
   </Link>
 </p>
 
@@ -465,65 +499,74 @@ const InputField = ({ label, name, value, onChange, error, placeholder }) => (
 
 // Styles
 const containerStyle = {
-  minHeight: '100vh',
+  height: '100dvh',
+  minWidth:'150dvh', // ✅ handles mobile + desktop
+  maxHeight: '200dvh', // ✅ ensures full height
+  overflow: 'hidden', // ✅ removes scroll
+  backgroundColor: '#151716',
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
-  padding: '20px',
+  justifyContent: 'center',
   fontFamily: 'Poppins, sans-serif',
-  background: 'transparent', // Let FilmStrip handle background
+  padding: '20px',
   boxSizing: 'border-box'
 };
 
 const formCardStyle = {
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
+  backgroundColor: '#2d2f2e',
   padding: '40px',
   borderRadius: 'none',
-  width: '100%',
-  maxWidth: '480px', // ✅ wider than 400px
+  width: '90%',
+  maxWidth: '400px', // ✅ wider than 400px
   backdropFilter: 'blur(8px)',
   boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-  color: '#fff'
+  color: '#fff',
+  boxSizing: 'border-box',
 };
 
 
 const inputStyle = {
   width: '100%',
+  height: '47px',
   padding: '10px 12px',
   marginTop: '6px',
   borderRadius: '8px',
   border: '1px solid #ccc',
   fontSize: '1rem',
-  backgroundColor: '#fff',
-  color: '#000',
-  fontFamily: 'inherit'
+  outline: 'none',
+  backgroundColor: '#151716',
+  border:' 1px solid yellow',
+  fontFamily: 'inherit',
+  boxSizing: 'border-box',
+  color: '#fff',
 };
 
 const submitButton = {
   marginTop: '10px',
-  width: '100%',
-  padding: '12px',
+  width: '40%',             // 🔹 same width
+  padding: '10px 12px',     // 🔹 same height and spacing
   borderRadius: '8px',
   backgroundColor: '#f5c518',
   border: 'none',
   color: '#000',
   fontWeight: '600',
-  fontSize: '1rem',
-  cursor: 'pointer'
+  fontSize: '0.95rem',
+  cursor: 'pointer',
+  display: 'block',
+  marginLeft: 'auto',
+  marginRight: 'auto'
 };
 
 const resendButton = {
-  marginTop: '10px',
-  background: 'none',
-  border: 'none',
+  ...submitButton,                 // 🔁 inherit base style
+  backgroundColor: 'transparent', // ✨ optional: if you want it different
   color: '#f5c518',
   textDecoration: 'underline',
-  cursor: 'pointer'
+  fontWeight: '500',
+  border: '1px solid #f5c518'     // optional: give it a border
 };
-
 const titleStyle = {
-  marginBottom: '30px',
+  marginBottom: '20px 0',
   color: '#f5c518',
   textAlign: 'center'
 };

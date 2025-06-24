@@ -1,13 +1,13 @@
 /* Main wrapper */
 .login-container {
-  min-height: 100vh;
+  height: 100dvh;
   padding: 2rem 1rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   font-family: 'Poppins', sans-serif; /* You can keep 'Segoe UI' if you want */
-  background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+  background-color: #151716;
   box-sizing: border-box;
   position: relative;      /* ✅ Add this */
   overflow: hidden;        /* ✅ Prevent background from causing scroll */
@@ -22,12 +22,12 @@
 
 .simple-phone-input input{
   width: 69%;
-  background-color: transparent;
+  background-color:transparent;
   padding: 12px 12px 12px 50px;
   font-size: 16px;
   border-radius: 8px;
   border-bottom: 1px solid #aaa;
-  color: white;
+  color: rgb(255, 255, 255);
   position: relative;
   left: 4rem;
   border-left: 0px solid #aaa;
@@ -48,30 +48,14 @@
   border-left: 1px solid #aaa;
   transform: translateY(-50%);
   font-size: 16px;
-  color: rgb(8, 0, 0);
-  background-color: #fff;
+  color: rgb(255, 255, 255);
+  background-color: rgb(45,47,46);
   padding: 10px 12px;
   width: 10%;
   pointer-events: none;
   border-bottom-left-radius: 10px;
   border-top-left-radius: 10px;
 }
-
-.login-container::before {
-  content: '';
-  position: absolute;
-  top: -8rem;
-  left: -8rem;
-  width: 30rem;
-  height: 30rem;
-  background: radial-gradient(circle at center, #f5c518, transparent);
-  border-radius: 50%;
-  opacity: 0.15;
-  z-index: 0;
-  filter: blur(5rem);
-  pointer-events: none;
-}
-
 
 
 /* Title and Subtitle */
@@ -82,12 +66,15 @@
   color: #f5c518;
   letter-spacing: 1px;
   text-align: center;
+  margin-bottom: 10px;
 }
 
 .login-heading {
   font-size: 1.2rem;
   color: #ddd;
  text-align: center;
+ margin-top: 0;
+ margin-bottom: 20px;
 }
 
 /* Card box */
@@ -95,7 +82,7 @@
   border-radius: none;
   color:' #fff';
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background:transparent;
+  background:#2d2f2e;
   backdrop-filter: blur(10px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   padding: 2rem;
@@ -108,7 +95,7 @@
   flex-direction: column;
   gap: 0.5rem;
   max-height: fit-content;
-  min-height: 20rem;
+  min-height: 21.5rem;
   transition: all 0.3s ease-in-out;
 }
 
@@ -116,7 +103,7 @@
 /* Inputs */
 .login-box input {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid yellow;
   background-color: #1e1e1e;
   font-size: 1rem;
   color:#fff;
@@ -185,7 +172,7 @@
   height: 1rem;
   font-size: 1.2rem;
   text-align: center;
-  border: 1px solid #666;
+  border-color: yellow;
   border-radius: 6px;
   background: #f9f9f9;
   transition: all 0.3s ease;
@@ -197,6 +184,7 @@
 @media screen and (min-width: 480px) {
   .otp-input {
     width: 1.2rem;
+    border: 1px solid yellow;
     height: 1.5rem;
     font-size: 1.4rem;
   }
@@ -233,19 +221,21 @@
 
 .resend-btn:hover {
   background-color: #5b6dff;
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 /* Footer signup link */
 .signup-text {
-  margin-top:-1rem;
-  font-size: 0.9rem;
+  margin-top:10px;
+  font-size: 1rem;
   text-align: center ;
+  color: #ccc;
 }
 
 .link-text {
   color: #f5c518;
   cursor: pointer;
+  text-decoration: none;
 }
 /* 🔥 Artistic input style for Phone Number */
 .input-block {
@@ -389,8 +379,8 @@ input:-webkit-autofill {
 }
 /* ✅ Send OTP styling consistent with other buttons */
 .send-otp-btn {
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
+  padding: 10px 12px;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #000;
   background-color: #f5c518;
@@ -398,7 +388,7 @@ input:-webkit-autofill {
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(91, 109, 255, 0.3);
   transition: background 0.2s ease;
-  width: 60%;
+  width: 35%;
   align-self: center;
   margin-top: 1rem;
 }

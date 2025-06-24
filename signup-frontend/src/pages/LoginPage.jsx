@@ -18,6 +18,13 @@ const OTPLogin = () => {
     deviceId = Math.random().toString(36).substring(2, 10);
     localStorage.setItem('deviceId', deviceId);
   }
+   document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+  return () => {
+    document.body.style.overflow = 'auto';
+    document.documentElement.style.overflow = 'auto';
+  };
+
 }, []);
 
 
@@ -200,7 +207,7 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
     <div className="login-container">
       <FilmStripFrame>
       <div className="login-box">
-        <div
+        <div  className="login-header" style={{ marginBottom: '20px' }}
         >
           <h1 className="filmroll-title">🎬FILMROLL</h1>
           <h2 className="login-heading">Login</h2>
@@ -216,9 +223,9 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
     height: '46px'
   }}>
     <div style={{
-      backgroundColor: '#fff',
-      color: '#000',
-      border: '1px solid #ccc',
+      backgroundColor: '#151716',
+      border:' 1px solid yellow',
+      color: '#ccc',
       borderRight: 'none',
       borderTopLeftRadius: '8px',
       borderBottomLeftRadius: '8px',
@@ -249,8 +256,9 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
       maxLength={10}
       style={{
         flex: 1,
-        backgroundColor: '#fff',
-        color: '#111',
+        backgroundColor: '#151716',
+        color: '#ccc',
+        border:' 1px solid yellow',
         borderLeft: 'none',
         borderTopRightRadius: '8px',
         borderBottomRightRadius: '8px',
@@ -259,7 +267,8 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
         fontSize: '1.2rem',
         outline: 'none',
         width: '100%',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        
       }}
     />
   </div>
