@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom'; // Import Link
-
+import FilmStripFrame from './components/Filmstrip';
 function TermsPage() {
     const containerStyle = {
         minHeight: '100vh',
@@ -19,7 +19,7 @@ function TermsPage() {
         background: 'rgba(255, 255, 255, 0.05)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         padding: '40px',
-        borderRadius: '16px',
+        borderRadius: 'none',
         width: '100%',
         maxWidth: '600px',
         backdropFilter: 'blur(8px)',
@@ -63,6 +63,7 @@ function TermsPage() {
 
     return (
         <div style={containerStyle}>
+            <FilmStripFrame>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} style={cardStyle}>
                 <div> {/* Content Wrapper for text */}
                     <h2 style={titleStyle}>Terms and Conditions</h2>
@@ -95,7 +96,9 @@ function TermsPage() {
 </Link>
 
                 </div>
+
             </motion.div>
+            </FilmStripFrame>
         </div>
     );
 }

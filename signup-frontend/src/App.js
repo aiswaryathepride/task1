@@ -7,6 +7,7 @@ import HomePage from './pages/Home';
 import ProfilePage from './pages/ProfilePage';
 import PostDemo from './pages/PostDemo';
 import TermsPage from './TermsPage';
+import FilmStripFrame from './components/Filmstrip';
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Route path="/edit-profile" element={<ProfilePage />} />
       <Route path="/demo" element={<PostDemo/>} />
       <Route path ="/terms" element={<TermsPage />} />
+      <Route path="*" element={<FilmStripFrame/>} />
       </Routes>
     </Router>
   );
