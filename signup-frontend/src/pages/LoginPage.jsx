@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import FilmStripFrame from '../components/Filmstrip';
 const OTPLogin = () => {
   useEffect(() => {
   const sessionId = sessionStorage.getItem('loggedInUser');
@@ -197,37 +198,80 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
 
   return (
     <div className="login-container">
-      <h1 className="filmroll-title">🎬 FILMROLL</h1>
-      <h2 className="login-heading">Login</h2>
-
+      <FilmStripFrame>
       <div className="login-box">
+        <div
+        >
+          <h1 className="filmroll-title">🎬FILMROLL</h1>
+          <h2 className="login-heading">Login</h2>
+          </div>
         {/* Phone Number Field */}
-        <div className="floating-phone-group">
-  <span className="fixed-code">+91</span>
-  <div className="floating-wrapper">
+        <div style={{ marginBottom: '16px', width: '100%' }}>
+  <label style={{ display: 'block', marginBottom: '6px', color: '#ccc', fontWeight: 500 }}>
+    Phone Number
+  </label>
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    height: '46px'
+  }}>
+    <div style={{
+      backgroundColor: '#fff',
+      color: '#000',
+      border: '1px solid #ccc',
+      borderRight: 'none',
+      borderTopLeftRadius: '8px',
+      borderBottomLeftRadius: '8px',
+      padding: '0 12px',
+      height: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      fontWeight: 'bold'
+    }}>
+      +91
+    </div>
     <input
-      type="text"
-      id="phone"
+      type="tel"
+      placeholder="Enter 10-digit number"
       value={phone}
       onChange={(e) => {
-  const value = e.target.value;
-  if (/^\d*$/.test(value)) {
-    setPhone(value);
-    if (value.length === 10) {
-      checkPhoneExists(value); // 🔍
-    } else {
-      setPhoneError('');
-      setIsPhoneValid(false);
-    }
-  }
-}}
-
-      required
+        const value = e.target.value;
+        if (/^\d*$/.test(value)) {
+          setPhone(value);
+          if (value.length === 10) {
+            checkPhoneExists(value);
+          } else {
+            setPhoneError('');
+            setIsPhoneValid(false);
+          }
+        }
+      }}
+      maxLength={10}
+      style={{
+        flex: 1,
+        backgroundColor: '#fff',
+        color: '#111',
+        borderLeft: 'none',
+        borderTopRightRadius: '8px',
+        borderBottomRightRadius: '8px',
+        padding: '0 11px',
+        height: '104%',
+        fontSize: '1.2rem',
+        outline: 'none',
+        width: '100%',
+        boxSizing: 'border-box'
+      }}
     />
-    <label htmlFor="phone" className={phone ? 'float' : ''}>Phone Number</label>
-   {phoneError && <p className="error-text">{phoneError}</p>}
   </div>
+  {phoneError && (
+    <span style={{ color: 'red', fontSize: '1rem', marginTop: '15px',
+    marginLeft: '20px',
+     display: 'block' }}>
+      {phoneError}
+    </span>
+  )}
 </div>
+
 
 
         {/* OTP Section */}
@@ -237,7 +281,7 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
   </p>
 ) : otpSent ? (
   <>
-    <label>Enter OTP</label>
+    <label style={{position:'relative',top:'13px'}}>Enter OTP</label>
     <div className="otp-boxes">
       {otpArray.map((digit, index) => (
         <input
@@ -285,10 +329,10 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
  <button
   onClick={handleSendOTP}
   disabled={!/^\d{10}$/.test(phone) || !isPhoneValid}
-  className={!/^\d{10}$/.test(phone) || !isPhoneValid ? 'disabled-btn' : ''}
->
+  className={`send-otp-btn ${!/^\d{10}$/.test(phone) || !isPhoneValid ? 'disabled-btn' : ''}`}>
   Send OTP
 </button>
+
 
 )}
 {showLoginToast && (
@@ -299,11 +343,13 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
 
 
       </div>
-
+ </FilmStripFrame>
       <p className="signup-text">
         Don't have an account? <Link className="link-text" to="/signup">Sign Up</Link>
       </p>
+      
     </div>
+   
   );
 };
 

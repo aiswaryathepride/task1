@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
-
+import FilmStripFrame from './components/Filmstrip';
 // --- Username format validation function ---
 const validateUsername = (inputUsername) => {
   if (!inputUsername.trim()) return 'Username is required.';
@@ -230,6 +230,7 @@ function Register() {
 
   return (
     <div style={containerStyle}>
+        <FilmStripFrame>
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -440,8 +441,10 @@ function Register() {
 </p>
 
       </motion.div>
+      </FilmStripFrame>
       {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg('')} />}
     </div>
+  
   );
 }
 
@@ -463,25 +466,27 @@ const InputField = ({ label, name, value, onChange, error, placeholder }) => (
 // Styles
 const containerStyle = {
   minHeight: '100vh',
-  background: 'linear-gradient(to right, #141e30, #243b55)',
   display: 'flex',
-  alignItems: 'center',
   justifyContent: 'center',
+  alignItems: 'center',
+  padding: '20px',
   fontFamily: 'Poppins, sans-serif',
-  padding: '20px'
+  background: 'transparent', // Let FilmStrip handle background
+  boxSizing: 'border-box'
 };
 
 const formCardStyle = {
   background: 'rgba(255, 255, 255, 0.05)',
   border: '1px solid rgba(255, 255, 255, 0.1)',
   padding: '40px',
-  borderRadius: '16px',
+  borderRadius: 'none',
   width: '100%',
-  maxWidth: '400px',
+  maxWidth: '480px', // ✅ wider than 400px
   backdropFilter: 'blur(8px)',
   boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
   color: '#fff'
 };
+
 
 const inputStyle = {
   width: '100%',
