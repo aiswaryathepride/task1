@@ -94,7 +94,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-height: fit-content;
+  max-height: 28rem;
   min-height: 21.5rem;
   transition: all 0.3s ease-in-out;
 }
@@ -125,7 +125,7 @@
   transition: background 0.2s ease;
 }
 .disabled-btn {
-  background-color: #777 !important;
+  background-color: #ccc !important;
   cursor: not-allowed;
   opacity: 0.8;
 }
@@ -143,7 +143,8 @@
   align-items: center;
 }
 .below-timer {
-  margin-top: 0.2rem;
+  position: absolute;
+  margin-top: 3rem;
   font-size: 0.9rem;
   color: #f5c518;
 }

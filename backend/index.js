@@ -115,7 +115,7 @@ await admin.firestore().collection('sessions').doc(sessionId).set({
 });
 
 app.post('/verify-register', async (req, res) => {
-  let { phone, otp } = req.body;
+  let { phone, otp, deviceId } = req.body;
 
   if (!phone.startsWith('+')) {
     phone = '+91' + phone;
@@ -124,11 +124,43 @@ app.post('/verify-register', async (req, res) => {
   if (otpStore[phone] === otp) {
     delete otpStore[phone];
     console.log(`✅ Register OTP verified for ${phone}`);
-    return res.status(200).json({ message: 'OTP verified successfully.' });
+
+    // 🔁 Check if session already exists (like /verify)
+    const existing = await admin.firestore().collection('sessions')
+      .where('phone', '==', phone)
+      .where('deviceId', '==', deviceId)
+      .limit(1)
+      .get();
+
+    if (!existing.empty) {
+      const existingSession = existing.docs[0];
+      return res.json({
+        message: 'Already logged in on this device',
+        phone,
+        sessionId: existingSession.id
+      });
+    }
+
+    // ✅ Create new session
+    const sessionId = Math.random().toString(36).substring(2, 15);
+
+    await admin.firestore().collection('sessions').doc(sessionId).set({
+      phone,
+      deviceId,
+      createdAt: new Date(),
+    });
+
+    console.log(`✅ Session created after register for ${phone} → ID: ${sessionId}`);
+    return res.status(200).json({
+      message: 'OTP verified successfully',
+      phone,
+      sessionId
+    });
   }
 
   return res.status(400).json({ message: 'Invalid OTP.' });
 });
+
 // Check if phone exists in DB (simulate using Firebase or any data source)
 app.get('/check-phone', async (req, res) => {
   const { phone } = req.query;
@@ -231,16 +263,15 @@ await admin.firestore().collection('sessions').doc(sessionId).delete();
 });
 
 app.post('/signup', async (req, res) => {
-  const { fullName, username, phone } = req.body;
+  const {username, phone } = req.body;
 
-  if (!fullName || !username || !phone) {
+  if (!username || !phone) {
     return res.status(400).json({ message: 'Missing required fields' });
   }
 
   try {
     // Store in Firestore `usernames` collection
     await admin.firestore().collection('usernames').add({
-      name: fullName,
       username: username.toLowerCase(),
       phone: phone.startsWith('+') ? phone.replace('+', '') : phone,
       createdAt: new Date()
@@ -289,9 +320,11 @@ app.get('/suggest-usernames', async (req, res) => {
     return res.status(400).json({ message: validationError });
   }
 
-  const base = partialUsername?.trim().toLowerCase() || '';
+  const rawBase = partialUsername?.trim().toLowerCase() || '';
+const base = rawBase.length > 12 ? rawBase.slice(0, 12) : rawBase;
+
   const suggestions = [];
-  const maxSuggestions = 3;
+  const maxSuggestions = 2;
 
   try {
     const exactDoc = await db.collection('usernames').where('username', '==', base).limit(1).get();
