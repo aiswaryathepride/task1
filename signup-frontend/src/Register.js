@@ -5,8 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import FilmStripFrame from './components/Filmstrip';
 // --- Username format validation function ---
 const validateUsername = (inputUsername) => {
-  if (!inputUsername.trim()) return 'Username is required.';
-  const trimmed = inputUsername.trim();
+  const trimmed = (inputUsername || '').trim();
 
   if (/\s/.test(trimmed)) return 'Username cannot contain spaces.';
   if (trimmed.length < 3) return 'Username must be at least 3 characters long.';
@@ -33,14 +32,27 @@ function Register() {
 
    // Initialize formData from sessionStorage or use default empty values
    const [formData, setFormData] = useState(() => {
-     const savedFormData = sessionStorage.getItem('registerFormData');
-     return savedFormData ? JSON.parse(savedFormData) : {
+     const returningFromTnC = sessionStorage.getItem('returningFromTnC') === 'true';
+     if (returningFromTnC) {
+       const saved = sessionStorage.getItem('registerFormData');
+       return saved ? JSON.parse(saved) : {
+         username: '',
+         phone: '',
+         termsAccepted: false
+       };
+     }
+     // Clear any stale data if not returning from T&C
+     sessionStorage.removeItem('registerFormData');
+     return {
        username: '',
        fullname: '',
        phone: '',
        termsAccepted: false
      };
    });
+   useEffect(() => {
+     sessionStorage.removeItem('returningFromTnC');
+   }, []);
 
   const [errors, setErrors] = useState({});
   const [otpSent, setOtpSent] = useState(false);
@@ -49,12 +61,20 @@ function Register() {
   const [toastMsg, setToastMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']);
+const [otpRefs] = useState(() => Array(6).fill().map(() => React.createRef()));
+const [otpSuccess, setOtpSuccess] = useState(false);
+const [otpExpired, setOtpExpired] = useState(false);
+const [otpErrorMsg, setOtpErrorMsg] = useState('');
+const [showTakenMessage, setShowTakenMessage] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [resendTimer, setResendTimer] = useState(60);
   const [availability, setAvailability] = useState({
     usernameExists: false,
     phoneExists: false
   });
+const [focusedIndex, setFocusedIndex] = useState(null); // New line
+const [manualResend, setManualResend] = useState(false);
 
 
     // Save formData to sessionStorage when the component unmounts or before navigation
@@ -78,34 +98,54 @@ function Register() {
       };
     }, [formData, otpSent]); 
   // Timer countdown
-  useEffect(() => {
-    if (otpSent && resendTimer > 0) {
-      const timer = setInterval(() => setResendTimer(prev => prev - 1), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [otpSent, resendTimer]);
+ useEffect(() => {
+  if (otpSent && resendTimer > 0) {
+    const timer = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setOtpExpired(true); // ✅ This line is crucial
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }
+}, [otpSent, resendTimer]);
+
 
   // Input validation
   const validate = () => {
     const newErrors = {};
     const usernameError = validateUsername(formData.username);
     if (usernameError) newErrors.username = usernameError;
-    if (!formData.fullname.trim()) newErrors.fullname = "Full name is required.";
-    if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Enter a valid 10-digit Indian phone number.";
+    if (!/^\d{10}$/.test(formData.phone)) newErrors.phone = "Enter a valid 10-digit Phone number.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Input change handler
   const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-    const inputValue = type === 'checkbox' ? checked : (name === 'phone' ? value.replace(/\D/g, '') : value);
-    setFormData(prev => ({ ...prev, [name]: inputValue }));
-    setErrors(prev => ({
-      ...prev,
-      [name]: name === 'username' ? validateUsername(value) : ''
-    }));
-  };
+  const { name, value, type, checked } = e.target;
+
+  // Sanitize input
+  const inputValue = type === 'checkbox' ? checked : (name === 'phone' ? value.replace(/\D/g, '') : value);
+
+  // Enforce max length on username input
+  if (name === 'username' && inputValue.length > 15) {
+    setErrors(prev => ({ ...prev, username: "Username cannot exceed 15 characters." }));
+    return; // Prevent update
+  }
+
+  setFormData(prev => ({ ...prev, [name]: inputValue }));
+
+  // Set errors (optional: only for username)
+  setErrors(prev => ({
+    ...prev,
+    [name]: name === 'username' ? validateUsername(inputValue) : ''
+  }));
+};
 
   // Username availability check
   useEffect(() => {
@@ -125,13 +165,21 @@ function Register() {
       setAvailability(prev => ({ ...prev, usernameExists: isTaken }));
 
       // 🧠 If taken, fetch suggestions
-      if (isTaken) {
-        const suggRes = await axios.get(`http://localhost:3001/suggest-usernames`, {
-          params: { partialUsername: formData.username }
-        });
-        setSuggestions(suggRes.data.suggestions || []);
+       if (isTaken) {
+        setShowTakenMessage(true);
+        setSuggestions([]); // hide suggestions initially
+      
+        // Wait 2 seconds then show suggestions
+        setTimeout(async () => {
+          const suggRes = await axios.get(`http://localhost:3001/suggest-usernames`, {
+            params: { partialUsername: formData.username }
+          });
+          setSuggestions(suggRes.data.suggestions || []);
+          setShowTakenMessage(false);
+        }, 2000);
       } else {
         setSuggestions([]);
+        setShowTakenMessage(false);
       }
     } catch (error) {
       console.error('Username check error:', error);
@@ -198,45 +246,94 @@ function Register() {
       setLoading(false);
     }
   };
+useEffect(() => {
+  if (!localStorage.getItem('deviceId')) {
+    const newDeviceId = crypto.randomUUID();
+    localStorage.setItem('deviceId', newDeviceId);
+  }
+}, []);
 
   // Verify OTP
-  const handleVerifyOtp = async () => {
-    setLoading(true);
-    const formattedPhone = formData.phone.startsWith('+') ? formData.phone : '+91' + formData.phone;
-    try {
-      const res = await axios.post('http://localhost:3001/verify-register', {
-        phone: formattedPhone, otp
-      });
-      setMessage(res.data.message);
-      if (res.data.message === 'OTP verified successfully.')
-       setToastMsg('✅ Account created! Redirecting to login...');
-        setTimeout(() => {navigate('/login');}, 3500);
+ const handleVerifyOtp = async () => {
+  setLoading(true);
+  const joinedOtp = otpArray.join('');
+  const formattedPhone = formData.phone.startsWith('+') ? formData.phone : '+91' + formData.phone;
+  const deviceId = localStorage.getItem('deviceId'); // or generate if not present
+
+  try {
+    const res = await axios.post('http://localhost:3001/verify-register', {
+      phone: formattedPhone,
+      otp: joinedOtp,
+      deviceId
+    });
+
+    setMessage(res.data.message);
+
+    if (res.data.sessionId) {
+      // ✅ Session success, create user & redirect
       await axios.post('http://localhost:3001/signup', {
-  fullName: formData.fullname,
-  username: formData.username,
-  phone: formattedPhone
-});
+        username: formData.username,
+        phone: formattedPhone
+      });
 
-    } catch {
-      setMessage("Invalid OTP. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      // ✅ Save session in sessionStorage
+      localStorage.setItem('loggedInUser', res.data.sessionId);
+      localStorage.setItem('loggedInPhone', res.data.phone);
 
-  // Resend OTP
-  const handleResendOtp = async () => {
-    setLoading(true);
-    try {
-      await axios.post('http://localhost:3001/resend-otp', { phone: formData.phone });
-      setMessage("OTP resent!");
-      setResendTimer(60);
-    } catch {
-      setMessage("Failed to resend OTP.");
-    } finally {
-      setLoading(false);
+      setToastMsg('✅ Account created! Redirecting to home...');
+      setTimeout(() => navigate('/home'), 3000);
+    } else {
+      setOtpSuccess(false);
+      setOtpErrorMsg("Invalid OTP or session error.");
     }
-  };
+  } catch {
+    setOtpSuccess(false);
+    setOtpErrorMsg("Invalid OTP. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleOTPChange = (e, index) => {
+  const value = e.target.value;
+  if (!/^\d?$/.test(value)) return;
+
+  const leftFilled = otpArray.slice(0, index).every((digit) => digit !== '');
+  if (!leftFilled && value) return;
+
+  const updated = [...otpArray];
+  updated[index] = value;
+  setOtpArray(updated);
+  setOtpErrorMsg('');
+
+  if (value && index < 5) {
+    otpRefs[index + 1].current?.focus();
+  }
+};
+const handleOTPKeyDown = (e, index) => {
+  if (e.key === 'Backspace' && !otpArray[index] && index > 0) {
+    otpRefs[index - 1].current?.focus();
+  }
+};
+
+const handleResendOtp = async () => {
+  setLoading(true);
+  try {
+    await axios.post('http://localhost:3001/resend-otp', { phone: '+91' + formData.phone });
+    setOtpArray(['', '', '', '', '', '']);
+    setOtpExpired(false);
+    setOtpSuccess(false);
+    setResendTimer(60);
+    setManualResend(true); // ✅ Only this!
+    otpRefs[0].current?.focus();
+  } catch {
+    setMessage("Failed to resend OTP.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const Toast = ({ message, onClose }) => {
   useEffect(() => {
@@ -283,54 +380,56 @@ function Register() {
               onChange={handleChange}
               error={errors.username}
               placeholder="Enter Username"
+              maxLength='15'
             />
-            {!errors.username && formData.username && (
-              availability.usernameExists
-                ? <p style={{ color: 'red', marginTop: '-12px' }}>❌ Username already taken</p>
-                
-                : <p style={{ color: 'lightgreen', marginTop: '-12px' }}>✅ Username available</p>
-            )}
-            {availability.usernameExists && suggestions.length > 0 && (
-  <div style={{ marginTop: '-5px', marginBottom: '15px' }}>
-    <p style={{ margin: '5px 0', fontSize: '0.9em', color: '#ccc' }}>Available suggestions:</p>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          
+<div style={{ minHeight: '40px', marginTop: '-36px', marginBottom: '6px' }}>
+ {!errors.username && availability.usernameExists && (
+  showTakenMessage ? (
+    <span style={{ color: '#ff6b6b', fontSize: '0.95rem' ,position:'absolute',
+      marginTop:'15px'
+    }}>Username exists</span>
+  ) : (
+    <div style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '6px',
+      lineHeight: '1.2',
+      fontSize: '0.95rem',
+      color: '#ffcc00',
+      height: '32px',
+      overflow: 'visible',
+      maxHeight: '2.4em',
+      marginTop: '15px',
+      cursor:'pointer',
+      textAlign:'center',
+      position:'absolute'
+    }}>
       {suggestions.map((sugg, index) => (
-        <span
-          key={index}
-          onClick={() => setFormData(prev => ({ ...prev, username: sugg }))}
-          style={{
-            cursor: 'pointer',
-            color: '#61dafb',
-            fontSize: '0.9em',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {sugg}
-        </span>
+        <span key={index}
+        onClick={() => {
+        setFormData(prev => ({ ...prev, username: sugg }));
+        setSuggestions([]);
+        setErrors(prev => ({ ...prev, username: '' }));
+      }}>
+        {sugg}{index !==suggestions.length-1 && ' , '}</span>
       ))}
     </div>
-  </div>
+  )
 )}
+
+</div>
+
 
 
             {errors.phone && (
-  <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
+  <span style={{ color: '#ff6b6b', fontSize: '0.95rem' }}>{errors.phone}</span>
 )}
 
 
 
-
-            <InputField
-              label="Full Name"
-              name="fullname"
-              value={formData.fullname}
-              onChange={handleChange}
-              error={errors.fullname}
-              placeholder="Enter Full Name"
-            />
-
-            <div style={{ marginBottom: '16px', width: '100%' }}>
-  <label>Phone</label>
+            <div style={{ marginBottom: '20px', width: '100%' }}>
+  <label>Phone <span style={{ color: 'red' }}>*</span></label>
   <div style={{
     display: 'flex',
     alignItems: 'center',
@@ -380,15 +479,20 @@ function Register() {
 
 
   </div>
-  {errors.phone && (
-  <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
-)}
+ <div style={{ height: '16px', marginTop: '-8px' }}>
+     {errors.phone && (
+       <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{errors.phone}</span>
+     )}
+   </div>
 
 
-{!errors.phone && /^\d{10}$/.test(formData.phone) && availability.phoneExists(
-    <p style={{ color: 'red', marginTop: '2px' }}>❌ Phone already registered</p>
-  ) 
-}
+{/* Tightened space for duplicate phone message */}
+  <div style={{ height: '16px', marginTop: '2px' }}>
+    {!errors.phone && /^\d{10}$/.test(formData.phone) && availability.phoneExists && (
+     <span style={{ color: '#ff6b6b', fontSize: '0.95rem' }}>Number already registered</span>
+
+    )}
+  </div>
 
   {/* Availability/Error messages stay the same */}
 </div>
@@ -404,70 +508,155 @@ function Register() {
                 style={{ marginRight: '10px' }}
               />
               <label htmlFor="termsAccepted" style={{ color: '#fff', fontSize: '0.95rem' }}>
-                I accept the <Link to="/terms" style={{ color: '#f5c518', textDecoration: 'none' }}>terms and conditions</Link>.
+                I accept the <Link to="/terms" 
+                onClick={()=>sessionStorage.setItem('returningFromTnC','true')}
+                style={{ color: '#f5c518', textDecoration: 'none' }}>Terms & Conditions</Link>
               </label>
             </div>
             {touched && !formData.termsAccepted && (
               <p style={{ color: '#ff6b6b', fontSize: '0.85rem', marginTop: '-12px' }}>
-                You must accept the terms and conditions to continue.
+                Accept the terms and conditions to continue
               </p>
             )}
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              type="submit"
-              disabled={
-                loading || availability.usernameExists || availability.phoneExists || !formData.termsAccepted
-              }
-              style={{
-                ...submitButton,
-                backgroundColor:
-                  availability.usernameExists || availability.phoneExists || !formData.termsAccepted
-                    ? '#ccc'
-                    : '#f5c518',
-                cursor:
-                  availability.usernameExists || availability.phoneExists || !formData.termsAccepted
-                    ? 'not-allowed'
-                    : 'pointer'
-              }}
-            >
-              {loading ? "Sending OTP..." : "Send OTP"}
-            </motion.button>
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  type="submit"
+  disabled={
+    loading ||
+    availability.usernameExists ||
+    availability.phoneExists ||
+    !formData.termsAccepted ||
+   !(formData.username || '').trim() ||
+    validateUsername(formData.username) !== '' ||
+    !/^\d{10}$/.test(formData.phone)
+  }
+  style={{
+    ...submitButton,
+    backgroundColor:
+      loading ||
+      availability.usernameExists ||
+      availability.phoneExists ||
+      !formData.termsAccepted ||
+    !(formData.username || '').trim() ||
+      validateUsername(formData.username) !== '' ||
+      !/^\d{10}$/.test(formData.phone)
+        ? '#ccc'
+        : '#f5c518',
+    cursor:
+      loading ||
+      availability.usernameExists ||
+      availability.phoneExists ||
+      !formData.termsAccepted ||
+     !(formData.username || '').trim()||
+      validateUsername(formData.username) !== '' ||
+      !/^\d{10}$/.test(formData.phone)
+        ? 'not-allowed'
+        : 'pointer'
+  }}
+>Send OTP
+ 
+</motion.button>
+{loading && (
+  <div style={{ fontColor:'Yellow',marginTop: '8px', fontSize: '0.85rem', color: '#888',textAlign:'center' }}>
+    Sending OTP...
+  </div>
+)}
           </form>
         ) : (
           <>
-            <InputField
-              label="Enter OTP"
-              name="otp"
-              value={otp}
-              onChange={e => setOtp(e.target.value)}
-            />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleVerifyOtp}
-              disabled={loading}
-              style={submitButton}
-            >
-              {loading ? "Verifying..." : "Verify OTP"}
-            </motion.button>
-            {resendTimer === 0 ? (
-              <button onClick={handleResendOtp} disabled={loading} style={resendButton}>
-                Resend OTP
-              </button>
-            ) : (
-              <p style={{ marginTop: '10px', textAlign:'center',color: '#aaa',textDecoration: 'none'}}>
-                Resend available in {resendTimer}s
-              </p>
-            )}
-          </>
+  <label style={{ position: 'relative', top: '11px',
+    textAlign:'center',marginLeft:'100px',fontColor:'yellow',fontSize:'1rem'
+   }}>Enter OTP</label>
+<div style={otpBoxContainer}>
+  {otpArray.map((digit, index) => (
+  <input
+  key={index}
+  type="text"
+  maxLength="1"
+  value={digit}
+  onChange={(e) => handleOTPChange(e, index)}
+  onKeyDown={(e) => handleOTPKeyDown(e, index)}
+  ref={(el) => (otpRefs[index].current = el)}
+  disabled={otpExpired}
+  style={{
+    ...otpInputStyle,
+    ...(focusedIndex === index && {
+      borderColor: '#f5c518',
+      boxShadow: '0 0 6px rgba(245, 197, 24, 0.3)',
+      transform: 'scale(1.1)',
+      transition: 'all 0.3s ease'
+    })
+  }}
+  onFocus={() => setFocusedIndex(index)}
+  onBlur={() => setFocusedIndex(null)}
+/>
+
+  ))}
+</div>
+
+
+  {!otpSuccess && otpErrorMsg &&(
+    <p className="error-message" style={{
+      color: 'red',
+      marginTop: '10px',
+      marginBottom: '10px',
+      fontSize: '1.1rem',
+      width: '100%',
+      fontWeight: 'bold',
+      textAlign: 'center'
+    }}>
+      {otpErrorMsg}
+    </p>
+  )}
+
+  <div className="otp-actions" style={{ textAlign: 'center' }}>
+    {!otpExpired ? (
+  <>
+    <button
+      onClick={handleVerifyOtp}
+      disabled={otpArray.some((digit) => digit === '')}
+      style={
+        otpArray.some((digit) => digit === '')
+          ? disabledButton
+          : otpActionButton
+      }
+    >
+      Verify OTP
+    </button>
+    {!otpSuccess && (
+      <p style={resendTimerText}>
+        Expires in {resendTimer}s
+      </p>
+    )}
+  </>
+) : (
+  <button
+    onClick={() => {
+      setOtpArray(['', '', '', '', '', '']);
+      setOtpExpired(false);
+      handleResendOtp();
+    }}
+    style={otpActionButton}
+  >
+    Resend OTP
+  </button>
+)}
+</div>
+  {otpSuccess && (
+    <p className="success-message" style={{ textAlign: 'center', color: 'lightgreen' }}>
+      ✅ OTP Verified Successfully!
+    </p>
+  )}
+</>
+
         )}
 
         {message && (
           <p style={{ marginTop: '20px', color: '#f5c518', textAlign: 'center' }}>{message}</p>
         )}
-        <p style={{ marginTop: '20px', fontSize: '0.9rem', color: '#ccc', textAlign: 'center' }}>
+        <p style={{ marginTop: '50px', fontSize: '0.9rem', color: '#ccc', textAlign: 'center' }}>
   Already have an account ?{' '}
   <Link to="/login" style={{ color: '#f5c518', fontWeight: 'bold', textDecoration: 'none' }}>
     Login
@@ -476,7 +665,6 @@ function Register() {
 
       </motion.div>
       </FilmStripFrame>
-      {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg('')} />}
     </div>
   
   );
@@ -485,7 +673,7 @@ function Register() {
 // Input Component
 const InputField = ({ label, name, value, onChange, error, placeholder }) => (
   <div style={{ marginBottom: '16px' }}>
-    <label>{label}</label>
+    <label>{label} <span style={{ color: 'red' }}>*</span></label>
     <input
       name={name}
       value={value}
@@ -493,7 +681,8 @@ const InputField = ({ label, name, value, onChange, error, placeholder }) => (
       placeholder={placeholder}
       style={inputStyle}
     />
-    {error && <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{error}</span>}
+    <div style={{ height: '16px', marginTop: '2px' }}>
+    {error && <span style={{ color: '#ff6b6b', fontSize: '0.85rem' }}>{error}</span>}</div>
   </div>
 );
 
@@ -522,6 +711,8 @@ const formCardStyle = {
   boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
   color: '#fff',
   boxSizing: 'border-box',
+  maxHeight:'565px',
+  height:'565px'
 };
 
 
@@ -531,7 +722,6 @@ const inputStyle = {
   padding: '10px 12px',
   marginTop: '6px',
   borderRadius: '8px',
-  border: '1px solid #ccc',
   fontSize: '1rem',
   outline: 'none',
   backgroundColor: '#151716',
@@ -563,12 +753,62 @@ const resendButton = {
   color: '#f5c518',
   textDecoration: 'underline',
   fontWeight: '500',
-  border: '1px solid #f5c518'     // optional: give it a border
+  border: '1px solid #f5c518'   // optional: give it a border
 };
 const titleStyle = {
   marginBottom: '20px 0',
   color: '#f5c518',
   textAlign: 'center'
+};
+const otpBoxContainer = {
+  display: 'flex',
+  justifyContent: 'center',
+  gap: '10px',
+  margin: '20px 0',
+};
+
+const otpInputStyle = {
+  width: '40px',
+  height: '50px',
+  fontSize: '1.5rem',
+  textAlign: 'center',
+  borderRadius: '8px',
+  border: '1px solid yellow',
+  backgroundColor: '#151716',
+  color: '#fff',
+  outline: 'none',
+};
+
+const otpInputFocusStyle = {
+  borderColor: '#fff000',
+};
+
+const otpActionButton = {
+  backgroundColor: 'yellow',
+  fontSize:'1rem',
+  color: 'black',
+  width:'50%',
+  height:'45px',
+  fontWeight: 'bold',
+  padding: '10px 20px',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  transition: 'transform 0.2s ease',
+  marginTop: '12px',
+};
+
+const disabledButton = {
+  ...otpActionButton,
+  backgroundColor: '#555',
+  cursor: 'not-allowed',
+  opacity: 0.6,
+};
+
+const resendTimerText = {
+  color: '#ffcc00',
+  marginTop: '10px',
+  textAlign: 'center',
 };
 
 export default Register;

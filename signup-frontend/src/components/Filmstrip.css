@@ -38,11 +38,11 @@ width: 100%;
   background-color:rgb(59, 55, 55);
     display: flex;
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
-  width: auto;
   max-width: 100%;
-  min-width: 300px;
+  width: 100%;
   justify-content: center;
   box-sizing: border-box;
+  align-items: center;
   z-index: 1;
 }
 .film-labels {

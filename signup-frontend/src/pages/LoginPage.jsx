@@ -7,7 +7,8 @@ import { useEffect } from 'react';
 import FilmStripFrame from '../components/Filmstrip';
 const OTPLogin = () => {
   useEffect(() => {
-  const sessionId = sessionStorage.getItem('loggedInUser');
+const sessionId = localStorage.getItem('loggedInUser');
+
   if (sessionId) {
     navigate('/home');
     return; // 👈 early exit to avoid running rest
@@ -39,14 +40,14 @@ const OTPLogin = () => {
   const [otpExpired, setOtpExpired] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [otpSuccess, setOtpSuccess] = useState(false);
+  const [otpErrorMsg, setOtpErrorMsg] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [showLoginToast, setShowLoginToast] = useState(false);
 
 const [isPhoneValid, setIsPhoneValid] = useState(false);
- const sessionId = sessionStorage.getItem('loggedInUser');
  const handleSendOTP = async () => {
-  const existingSession = sessionStorage.getItem('loggedInUser');
-  const loggedInPhone = sessionStorage.getItem('loggedInPhone'); // store this during login
+  const existingSession = localStorage.getItem('loggedInUser');
+const loggedInPhone = localStorage.getItem('loggedInPhone');
 
   const fullPhone = phone.startsWith('+91') ? phone : '+91' + phone;
 
@@ -54,8 +55,9 @@ const [isPhoneValid, setIsPhoneValid] = useState(false);
   await axios.post('http://localhost:3001/logout', {
     sessionId: existingSession
   });
-  sessionStorage.removeItem('loggedInUser');
-  sessionStorage.removeItem('loggedInPhone');
+localStorage.removeItem('loggedInUser');
+localStorage.removeItem('loggedInPhone');
+
   console.log('Switched user – cleared session on backend too');
 }
   else if (existingSession) {
@@ -105,7 +107,7 @@ const res = await axios.post(
 );
 if (res.data.message === 'You are already logged in.') {
   // ✅ Store session and redirect to home directly
-  sessionStorage.setItem('loggedInUser', res.data.sessionId);
+  localStorage.setItem('loggedInUser', res.data.sessionId);
   sessionStorage.setItem('loggedInPhone', res.data.phone);
   alert('You were already logged in on this device. Redirecting to Home.');
   navigate('/home');
@@ -113,12 +115,14 @@ if (res.data.message === 'You are already logged in.') {
 }
 
 
-    if (res.data.message === 'OTP sent successfully.') {
-      setOtpExpired(false);
-      setOtpSuccess(false);
-      setOtpSent(true);
-      setResendCount(prev => prev + 1);
-      setOtpArray(['', '', '', '', '', '']);
+   if (res.data.message === 'OTP sent successfully.') {
+  setOtpErrorMsg(''); // ✅ Clear error message
+  setOtpArray(['', '', '', '', '', '']); // ✅ Reset OTP
+  setOtpSuccess(false); // ✅ Clear success flag
+  setOtpExpired(false); // ✅ Reset expiration
+  setOtpSent(true); // ✅ Proceed
+  setResendCount(prev => prev + 1);
+
 
       setTimeout(() => {
         if (otpRefs.current[0]) otpRefs.current[0].focus();
@@ -157,6 +161,7 @@ if (res.data.message === 'You are already logged in.') {
 
     if (value && index < 5) {
       otpRefs.current[index + 1].focus();
+      setOtpErrorMsg('');
     }
   };
 
@@ -188,8 +193,8 @@ if (res.data.message === 'You are already logged in.') {
         deviceId
       });
 // ✅THIS LINE to store session
-      sessionStorage.setItem('loggedInUser', res.data.sessionId);
-sessionStorage.setItem('loggedInPhone', res.data.phone);
+      localStorage.setItem('loggedInUser', res.data.sessionId);
+localStorage.setItem('loggedInPhone', res.data.phone);
       setOtpSuccess(true);
       setTimeout(() => {
         setShowLoginToast(true);
@@ -199,7 +204,8 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
 }, 4000);
     } catch (err) {
       setOtpSuccess(false);
-      alert(err.response?.data?.message || 'Invalid OTP');
+setOtpErrorMsg(err.response?.data?.message || '❌ Invalid OTP');
+
     }
   };
 
@@ -306,7 +312,13 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
         />
       ))}
     </div>
-
+{otpErrorMsg && !otpSuccess && (
+  <p className="error-message" style={{ color: 'red', marginTop: '5px',marginBottom:'5px',
+  fontSize: '1.1rem',  width: '100%',fontWeight:'bold',
+  textAlign: 'center' }}>
+    {otpErrorMsg}
+  </p>
+)}
     <div className="otp-actions">
   {!otpExpired ? (
     <>
@@ -320,6 +332,9 @@ sessionStorage.setItem('loggedInPhone', res.data.phone);
       {!otpSuccess && (
         <p className="resend-timer below-timer">Expires in {resendTimer}s</p>
       )}
+      
+
+
     </>
   ) : (
     <button className="resend-btn" onClick={handleSendOTP}>

@@ -8,7 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import PostDemo from './pages/PostDemo';
 import TermsPage from './TermsPage';
 import FilmStripFrame from './components/Filmstrip';
-
+import RegisterUI from './pages/Register';
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
       <Route path="/edit-profile" element={<ProfilePage />} />
       <Route path="/demo" element={<PostDemo/>} />
       <Route path ="/terms" element={<TermsPage />} />
-      <Route path="*" element={<FilmStripFrame/>} />
+      <Route path="*" element={<RegisterUI/>} />
       </Routes>
     </Router>
   );
